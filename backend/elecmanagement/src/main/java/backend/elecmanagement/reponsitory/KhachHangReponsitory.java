@@ -1,4 +1,6 @@
 package backend.elecmanagement.reponsitory;
+import backend.elecmanagement.entity.KhachHang;
+import org.springframework.data.jpa.repository.JpaRepository;
 
-public class KhachHangReponsitory {
+public interface KhachHangReponsitory extends JpaRepository<KhachHang, String> {
 }

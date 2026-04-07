@@ -1,4 +1,4 @@
-package backend.elecmanagement.dto;
+package backend.elecmanagement.dto.request;
 
 import lombok.Data;
 
