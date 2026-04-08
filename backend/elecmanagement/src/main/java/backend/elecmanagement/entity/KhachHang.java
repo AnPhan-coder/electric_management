@@ -3,24 +3,31 @@ package backend.elecmanagement.entity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
+@Table(name = "KHACHHANG")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class KhachHang {
+
     @Id
-    @Column(columnDefinition = "varchar(13)", nullable = false)
-    private String makh;
-    @Column(columnDefinition = "nvarchar(50)")
-    private String tenkh;
-    @Column(columnDefinition = "nvarchar(100)")
-    private String diachi;
-    @Column(columnDefinition = "nvarchar(12)")
+    @Column(name = "makh", columnDefinition = "varchar(13)", nullable = false)
+    private String maKh;
+
+    @Column(name = "tenkh", columnDefinition = "nvarchar(50)")
+    private String tenKh;
+
+    @Column(name = "diachi", columnDefinition = "nvarchar(100)")
+    private String diaChi;
+
+    @Column(name = "dt", columnDefinition = "nvarchar(12)")
     private String dt;
-    @Column(columnDefinition = "varchar(9)")
+
+    @Column(name = "cmnd", columnDefinition = "varchar(9)")
     private String cmnd;
 }
