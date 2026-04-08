@@ -1,5 +1,6 @@
 package backend.elecmanagement.service.impl;
 
+import backend.elecmanagement.dto.request.KhachHangNoDTO;
 import backend.elecmanagement.entity.*;
 import backend.elecmanagement.reponsitory.CtHoaDonReponsitory;
 import backend.elecmanagement.reponsitory.DienKeReponsitory;
@@ -31,7 +32,17 @@ public class HoaDonServiceimpl implements HoaDonService {
         this.dienKeReponsitory = dienKeReponsitory;
         this.giaDienReponsitory = giaDienReponsitory;
     }
-
+    //Danh sách nợ
+    @Override
+    public List<KhachHangNoDTO> getDanhSachNo() {
+        return hoaDonReponsitory.findDanhSachNo();
+    }
+    @Override
+    public long demSoLuongKhachNo() {
+        // Viết code đếm ở đây
+        return hoaDonReponsitory.countKhachHangNo();
+    }
+    //
     @Transactional
     public HoaDon tinhTienDien(String madk, int chisocuoi, LocalDateTime denngay) {
         // 1. Kiểm tra rỗng và truy vấn Điện kế

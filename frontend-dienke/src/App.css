@@ -218,3 +218,110 @@ body {
   color: #00b09b !important;
   font-weight: 700;
 }
+/* theo doi no */
+.header {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+.loading {
+    color: #ffca28;
+    font-style: italic;
+    margin-top: 1rem;
+}
+/* Tổng thể container */
+.container {
+    padding: 2rem;
+    background-color: #121212; /* Nền tối sâu */
+    min-height: 100vh;
+    font-family: 'Inter', -apple-system, sans-serif;
+    color: #e0e0e0;
+}
+
+/* Tiêu đề */
+.text-white {
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    letter-spacing: -0.5px;
+}
+
+/* Khung thông báo màu vàng nâu (Mẫu bạn yêu cầu) */
+.alert-box {
+    background-color: #3e2723; /* Nâu đậm */
+    border: 1px solid #5d4037;
+    color: #ffca28; /* Chữ vàng sáng */
+    padding: 1rem 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    display: inline-block;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.alert-box b {
+    font-size: 1.25rem;
+    color: #fff176;
+    margin: 0 4px;
+}
+
+/* Nút bấm chính */
+.btn-main {
+    background-color: #d32f2f; /* Màu đỏ chủ đạo */
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    display: block;
+}
+
+.btn-main:hover {
+    background-color: #b71c1c;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(211, 47, 47, 0.4);
+}
+
+.btn-main.active {
+    background-color: #455a64; /* Đổi sang màu xám khi đóng */
+}
+
+/* Bảng danh sách */
+.table-container {
+    margin-top: 2rem;
+    animation: slideDown 0.4s ease-out;
+}
+
+.styled-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    background-color: #1e1e1e;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    border: 1px solid white;
+}
+
+thead {
+    background-color: white;
+    color: black;
+   
+}
+.styled-table th {
+    padding: 1rem;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    letter-spacing: 0.5px;
+}
+
+.styled-table td {
+    padding: 1rem;
+    border-bottom: 1px solid #333;
+}
+
+.styled-table tbody tr:hover {
+    background-color: #2c2c2c;
+}

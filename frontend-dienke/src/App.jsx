@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './App.css';
 
 const API_URL = 'http://localhost:8080';
@@ -11,6 +11,9 @@ function App() {
       <div className="grid-container">
         <DienKeSection />
         <HoaDonSection />
+      </div>
+      <div>
+        <DanhSachNoTienDien />
       </div>
     </div>
   );
@@ -183,6 +186,106 @@ function HoaDonSection() {
       )}
     </div>
   );
+}
+//Theo doi no dien
+
+function DanhSachNoTienDien() {
+    const [danhSachNo, setDanhSachNo] = useState([]);
+    const [count, setCount] = useState(0); 
+    const [showList, setShowList] = useState(false); 
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        fetch(`${API_URL}/hoadon/dem-no`)
+            .then(res => res.json())
+            .then(data => setCount(data))
+            .catch(err => console.error(err));
+    }, []); 
+
+    const fetchDanhSachNo = async () => {
+        setLoading(true);
+        try {
+            const response = await fetch(`${API_URL}/hoadon/danh-sach-no`);
+            const data = await response.json();
+            setDanhSachNo(data);
+        } catch (error) { alert("Lỗi tải danh sách!",error); }
+        finally { setLoading(false); }
+    };
+
+     const handleToggleList = () => {
+        if (!showList) {
+            fetchDanhSachNo();
+        }
+        setShowList(!showList);
+    };
+
+    return (
+        <div className="container">
+            <div className="header"> 
+                <h1 className='text-white'>Theo dõi nợ tiền điện</h1>
+                
+                <div className="alert-box">
+                    Có <b>{count}</b> KH chưa thanh toán đúng hạn
+                </div>
+
+                <button 
+                    className={`btn-main ${showList ? 'active' : ''}`} 
+                    onClick={handleToggleList}
+                >
+                    {showList ? 'Đóng danh sách' : 'Xem danh sách nợ'}
+                </button>
+            </div>
+
+            {loading && <div className="loading">Đang tải dữ liệu...</div>}
+
+            {showList && !loading && (
+                <div className="table-container">
+                    <table className="styled-table">
+                        <thead>
+                            <tr>
+                                <th>Mã Hóa Đơn</th>
+                                <th>Kỳ</th>
+                                <th>Mã KH</th>
+                                <th>Tên Khách Hàng</th>
+                                <th>Điện Thoại</th>
+                                <th>Địa Chỉ</th>
+                                <th>Tổng Tiền (VNĐ)</th>
+                                <th>Tình trạng</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {danhSachNo.length === 0 ? (
+                                <tr>
+                                    <td colSpan="8" style={{ textAlign: 'center' }}>
+                                        Hiện tại không có khách hàng nào nợ tiền.
+                                    </td>
+                                </tr>
+                            ) : (
+                                danhSachNo.map((item) => (
+                                    <tr key={item.maHd}>
+                                        <td>{item.maHd}</td>
+                                        <td>{item.ky}</td>
+                                        <td>{item.maKh}</td>
+                                        <td>{item.tenKh}</td>
+                                        <td>{item.dienThoai}</td>
+                                        <td>{item.diaChi}</td>
+                                        <td style={{ fontWeight: 'bold' }}>
+                                            {item.tongTien.toLocaleString('vi-VN')}
+                                        </td>
+                                        <td>
+                                            <span className={item.tinhtrang ? "status-paid" : "status-unpaid"}>
+                                                {item.tinhtrang ? "Đã thanh toán" : "Chưa thanh toán"}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            )}
+        </div>
+    );
 }
 
 export default App;
