@@ -11,4 +11,6 @@ public interface HoaDonReponsitory extends JpaRepository<HoaDon, String> {
 
     @Query("SELECT h FROM HoaDon h WHERE h.mahd IN (SELECT c.id.mahd FROM CtHoaDon c WHERE c.id.madk = :madk) ORDER BY h.denngay DESC")
     List<HoaDon> findHistoryByMadk(@Param("madk") String madk);
+
+    List<HoaDon> findByTinhtrangFalseOrderByNgaylaphdDesc();
 }

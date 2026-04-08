@@ -30,4 +30,15 @@ public class HoaDonController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
+    @GetMapping("/no")
+    public ResponseEntity<java.util.List<HoaDon>> getDanhSachNo() {
+        return ResponseEntity.ok(hoaDonService.getDanhSachNo());
+    }
+
+    @PutMapping("/{mahd}/thanhtoan")
+    public ResponseEntity<Void> thanhToanHoaDon(@PathVariable String mahd) {
+        hoaDonService.thanhToanHoaDon(mahd);
+        return ResponseEntity.ok().build();
+    }
 }

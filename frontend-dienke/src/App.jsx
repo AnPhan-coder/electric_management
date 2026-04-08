@@ -3,6 +3,9 @@ import './App.css';
 
 const API_URL = 'http://localhost:8080';
 
+import TheoDoiNoSection from './components/TheoDoiNoSection';
+import KhachHangSection from './components/KhachHangSection';
+
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const TABS = {
@@ -29,16 +32,46 @@ function formatDateTime(isoString) {
 // ─── Root App ─────────────────────────────────────────────────────────────────
 
 function App() {
+  const [currentMenu, setCurrentMenu] = useState('khachhang');
+
+  const renderContent = () => {
+    switch (currentMenu) {
+      case 'khachhang': return <KhachHangSection />;
+      case 'dienke': return <DienKeSection />;
+      case 'hoadon': return <HoaDonSection />;
+      case 'theodoino': return <TheoDoiNoSection />;
+      case 'giadien': return <BangGiaDienSection />;
+      default: return <KhachHangSection />;
+    }
+  };
+
+  const getMenuTitle = () => {
+    switch (currentMenu) {
+      case 'khachhang': return 'Quản Lý Khách Hàng';
+      case 'dienke': return 'Quản Lý Điện Kế';
+      case 'hoadon': return 'Chốt Số & Tính Tiền';
+      case 'theodoino': return 'Theo Dõi Công Nợ';
+      case 'giadien': return 'Bảng Giá & Lịch Sử';
+      default: return 'Quản Lý Tính Tiền Điện';
+    }
+  }
+
   return (
     <div className="app-container">
-      <h1 className="page-title">QUẢN LÝ TIỀN ĐIỆN</h1>
-
-      <div className="grid-container">
-        <DienKeSection />
-        <HoaDonSection />
+      <div className="sidebar">
+        <h1 className="app-title">Q. Lý Tiền Điện</h1>
+        <div className="sidebar-nav">
+          <button className={`nav-item ${currentMenu === 'khachhang' ? 'nav-item--active' : ''}`} onClick={() => setCurrentMenu('khachhang')}>Khách Hàng</button>
+          <button className={`nav-item ${currentMenu === 'dienke' ? 'nav-item--active' : ''}`} onClick={() => setCurrentMenu('dienke')}>Điện Kế</button>
+          <button className={`nav-item ${currentMenu === 'hoadon' ? 'nav-item--active' : ''}`} onClick={() => setCurrentMenu('hoadon')}>Chốt Số Hóa Đơn</button>
+          <button className={`nav-item ${currentMenu === 'theodoino' ? 'nav-item--active' : ''}`} onClick={() => setCurrentMenu('theodoino')}>Theo Dõi Nợ</button>
+          <button className={`nav-item ${currentMenu === 'giadien' ? 'nav-item--active' : ''}`} onClick={() => setCurrentMenu('giadien')}>Bảng Giá & Lịch Sử</button>
+        </div>
       </div>
-
-      <BangGiaDienSection />
+      <div className="main-content">
+        <h2 className="page-title">{getMenuTitle()}</h2>
+        {renderContent()}
+      </div>
     </div>
   );
 }
@@ -67,48 +100,51 @@ function DienKeSection() {
       });
       if (response.ok) {
         const data = await response.json();
-        setMessage(`✅ Thêm thành công Điện kế: ${data.madk}`);
+        setMessage(`Thêm thành công Điện kế: ${data.madk}`);
         setIsError(false);
       } else {
         const errorText = await response.text();
-        setMessage(`❌ Lỗi: ${errorText}`);
+        setMessage(`Lỗi: ${errorText}`);
         setIsError(true);
       }
     } catch (error) {
-      setMessage(`❌ Lỗi kết nối: ${error.message}`);
+      setMessage(`Lỗi kết nối: ${error.message}`);
       setIsError(true);
     }
   };
 
   return (
     <div className="card">
-      <h2>1. Thêm Điện Kế Mới</h2>
       <form onSubmit={handleSubmit}>
-        <div className="form-group">
-          <label>Mã điện kế (8 số)</label>
-          <input className="input-field" type="text" name="madk" placeholder="VD: 12345678" onChange={handleChange} required />
+        <div className="grid-form">
+          <div className="form-group">
+            <label>Mã điện kế (8 số)</label>
+            <input className="input-field" type="text" name="madk" placeholder="VD: 12345678" onChange={handleChange} required />
+          </div>
+          <div className="form-group">
+            <label>Mã khách hàng</label>
+            <input className="input-field" type="text" name="makh" placeholder="Nhập mã KH..." onChange={handleChange} required />
+          </div>
+          <div className="form-group">
+            <label>Ngày sản xuất</label>
+            <input className="input-field" type="datetime-local" name="ngaysx" onChange={handleChange} required />
+          </div>
+          <div className="form-group">
+            <label>Ngày lắp đặt</label>
+            <input className="input-field" type="datetime-local" name="ngaylap" onChange={handleChange} required />
+          </div>
+          <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+            <label>Mô tả</label>
+            <input className="input-field" type="text" name="mota" placeholder="Nhập mô tả..." onChange={handleChange} required />
+          </div>
         </div>
-        <div className="form-group">
-          <label>Mã khách hàng</label>
-          <input className="input-field" type="text" name="makh" placeholder="Nhập mã KH..." onChange={handleChange} required />
+        <div style={{ marginTop: '16px' }}>
+          <label className="checkbox-group">
+            <input type="checkbox" name="trangthai" checked={dienKe.trangthai} onChange={handleChange} />
+            Hoạt động bình thường
+          </label>
+          <button type="submit" className="btn btn-primary" style={{ width: 'auto' }}>Lưu Điện Kế</button>
         </div>
-        <div className="form-group">
-          <label>Ngày sản xuất</label>
-          <input className="input-field" type="datetime-local" name="ngaysx" onChange={handleChange} required />
-        </div>
-        <div className="form-group">
-          <label>Ngày lắp đặt</label>
-          <input className="input-field" type="datetime-local" name="ngaylap" onChange={handleChange} required />
-        </div>
-        <div className="form-group">
-          <label>Mô tả</label>
-          <input className="input-field" type="text" name="mota" placeholder="Nhập mô tả..." onChange={handleChange} required />
-        </div>
-        <label className="checkbox-group">
-          <input type="checkbox" name="trangthai" checked={dienKe.trangthai} onChange={handleChange} />
-          Hoạt động bình thường
-        </label>
-        <button type="submit" className="btn btn-success">Lưu Điện Kế</button>
       </form>
       {message && (
         <div className={`alert ${isError ? 'alert-error' : 'alert-success'}`}>{message}</div>
@@ -148,41 +184,43 @@ function HoaDonSection() {
         setResult(data);
       } else {
         const errorText = await response.text();
-        setError(`❌ Lỗi: ${errorText}`);
+        setError(`Lỗi: ${errorText}`);
       }
     } catch (err) {
-      setError(`❌ Lỗi kết nối: ${err.message}`);
+      setError(`Lỗi kết nối: ${err.message}`);
     }
   };
 
   return (
     <div className="card">
-      <h2>2. Tính Tiền &amp; Chốt Số Hóa Đơn</h2>
       <form onSubmit={handleSubmit}>
-        <div className="form-group">
-          <label>Mã điện kế</label>
-          <input className="input-field" type="text" name="madk" placeholder="Nhập mã ĐK cần tính..." onChange={handleChange} required />
+        <div className="grid-form">
+          <div className="form-group">
+            <label>Mã điện kế</label>
+            <input className="input-field" type="text" name="madk" placeholder="Nhập mã ĐK cần tính..." onChange={handleChange} required />
+          </div>
+          <div className="form-group">
+            <label>Chỉ số cuối</label>
+            <input className="input-field" type="number" name="chisocuoi" placeholder="Nhập chỉ số KW chốt cuối tháng..." onChange={handleChange} required />
+          </div>
+          <div className="form-group">
+            <label>Ngày chốt số (Đến ngày)</label>
+            <input className="input-field" type="datetime-local" name="denngay" onChange={handleChange} required />
+          </div>
         </div>
-        <div className="form-group">
-          <label>Chỉ số cuối</label>
-          <input className="input-field" type="number" name="chisocuoi" placeholder="Nhập chỉ số KW chốt cuối tháng..." onChange={handleChange} required />
+        <div style={{ marginTop: '16px' }}>
+          <button type="submit" className="btn btn-primary" style={{ width: 'auto' }}>Thực thi Tính Tiền</button>
         </div>
-        <div className="form-group">
-          <label>Ngày chốt số (Đến ngày)</label>
-          <input className="input-field" type="datetime-local" name="denngay" onChange={handleChange} required />
-        </div>
-        <button type="submit" className="btn btn-primary">Thực thi Tính Tiền</button>
       </form>
 
       {error && <div className="alert alert-error">{error}</div>}
 
       {result && (
         <div className="bill-result">
-          <h3>✅ Lập Hóa Đơn Thành Công</h3>
+          <h3>Lập Hóa Đơn Thành Công</h3>
           <p>Mã Hóa Đơn: <strong>{result.mahd}</strong></p>
           <p>Kỳ thanh toán: <strong>{result.ky}</strong></p>
-          <p>Chỉ số đầu: <strong>{result.chisodau}</strong></p>
-          <p>Chỉ số cuối: <strong>{result.chisocuoi}</strong></p>
+          <p>Chỉ số đầu / cuối: <strong>{result.chisodau} / {result.chisocuoi}</strong></p>
           <p className="total-amount">
             Tổng thành tiền:
             <span>{result.tongthanhtien.toLocaleString('vi-VN')} VNĐ</span>
@@ -201,7 +239,6 @@ function BangGiaDienSection() {
   return (
     <div className="price-section">
       <div className="price-section-header">
-        <h2 className="price-section-title">3. Bảng Giá Điện</h2>
         <div className="tab-bar" role="tablist">
           <button
             role="tab"

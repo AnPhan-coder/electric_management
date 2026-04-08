@@ -23,4 +23,7 @@ public class KhachHang {
     private String dt;
     @Column(columnDefinition = "varchar(9)")
     private String cmnd;
+    
+    @Column(name = "trangthai", columnDefinition = "bit default 1")
+    private Boolean trangthai;
 }

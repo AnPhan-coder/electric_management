@@ -97,4 +97,18 @@ public class HoaDonServiceimpl implements HoaDonService {
 
         return hoaDon;
     }
+
+    @Override
+    public List<HoaDon> getDanhSachNo() {
+        return hoaDonReponsitory.findByTinhtrangFalseOrderByNgaylaphdDesc();
+    }
+
+    @Override
+    @Transactional
+    public void thanhToanHoaDon(String mahd) {
+        HoaDon hoaDon = hoaDonReponsitory.findById(mahd)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy hóa đơn: " + mahd));
+        hoaDon.setTinhtrang(true);
+        hoaDonReponsitory.save(hoaDon);
+    }
 }
