@@ -38,7 +38,6 @@ public class HoaDonController {
 
     @GetMapping("/danh-sach-no")
     public ResponseEntity<List<KhachHangNoDTO>> getDanhSachNo() {
-        // Gọi hàm từ Service thay vì Repository
         List<KhachHangNoDTO> danhSachNo = hoaDonService.getDanhSachNo();
         return ResponseEntity.ok(danhSachNo);
     }
