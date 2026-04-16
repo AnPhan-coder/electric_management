@@ -1,5 +1,9 @@
 package backend.elecmanagement.service.impl;
 
+import java.util.List;
+
+import org.springframework.stereotype.Service;
+
 import backend.elecmanagement.entity.DienKe;
 import backend.elecmanagement.entity.HoaDon;
 import backend.elecmanagement.entity.KhachHang;
@@ -7,9 +11,6 @@ import backend.elecmanagement.reponsitory.DienKeReponsitory;
 import backend.elecmanagement.reponsitory.HoaDonReponsitory;
 import backend.elecmanagement.reponsitory.KhachHangReponsitory;
 import backend.elecmanagement.service.KhachHangService;
-import org.springframework.stereotype.Service;
-
-import java.util.List;
 
 @Service
 public class KhachHangServiceimpl implements KhachHangService {
@@ -26,6 +27,33 @@ public class KhachHangServiceimpl implements KhachHangService {
         this.hoaDonReponsitory = hoaDonReponsitory;
     }
 
+    // Hàm dùng chung để kiểm tra ràng buộc dữ liệu
+    private void validateKhachHang(KhachHang kh) {
+        // 1. Kiểm tra số điện thoại (Phải đúng 10 số)
+        if (kh.getDt() == null || kh.getDt().trim().isEmpty()) {
+             throw new RuntimeException("Số điện thoại không được để trống");
+        }
+        
+        // Loại bỏ khoảng trắng nếu có
+        String sdt = kh.getDt().trim();
+        
+        if (sdt.length() != 10) {
+            throw new RuntimeException("Số điện thoại phải có đúng 10 chữ số (Hiện tại: " + sdt.length() + ")");
+        }
+        
+        if (!sdt.matches("\\d+")) {
+            throw new RuntimeException("Số điện thoại chỉ được chứa các chữ số");
+        }
+
+        // 2. Kiểm tra CMND (Ví dụ tối thiểu 9, tối đa 12)
+        if (kh.getCmnd() != null && !kh.getCmnd().trim().isEmpty()) {
+            String cmnd = kh.getCmnd().trim();
+            if (!cmnd.matches("\\d+")) {
+                throw new RuntimeException("CMND/CCCD chỉ được chứa các chữ số");
+            }
+        }
+    }
+
     @Override
     public List<KhachHang> findAllActive() {
         return khachHangReponsitory.findAllActive();
@@ -33,12 +61,18 @@ public class KhachHangServiceimpl implements KhachHangService {
 
     @Override
     public KhachHang create(KhachHang khachHang) {
+        // Kiểm tra trùng mã
         if(khachHangReponsitory.existsById(khachHang.getMakh())) {
-            throw new RuntimeException("Mã khách hàng đã tồn tại");
+            throw new RuntimeException("Mã khách hàng " + khachHang.getMakh() + " đã tồn tại");
         }
+
+        // Kiểm tra các ràng buộc SĐT, CMND
+        validateKhachHang(khachHang);
+
         if(khachHang.getTrangthai() == null) {
             khachHang.setTrangthai(true);
         }
+        
         return khachHangReponsitory.save(khachHang);
     }
 
@@ -46,10 +80,15 @@ public class KhachHangServiceimpl implements KhachHangService {
     public KhachHang update(String makh, KhachHang details) {
         KhachHang kh = khachHangReponsitory.findById(makh)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy Khách Hàng: " + makh));
+        
+        // Kiểm tra ràng buộc cho dữ liệu mới trước khi cập nhật
+        validateKhachHang(details);
+
         kh.setTenkh(details.getTenkh());
         kh.setDiachi(details.getDiachi());
-        kh.setDt(details.getDt());
-        kh.setCmnd(details.getCmnd());
+        kh.setDt(details.getDt().trim());
+        kh.setCmnd(details.getCmnd() != null ? details.getCmnd().trim() : null);
+        
         return khachHangReponsitory.save(kh);
     }
 
@@ -59,15 +98,17 @@ public class KhachHangServiceimpl implements KhachHangService {
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy Khách Hàng: " + makh));
 
         // Kiểm tra xem khách hàng có điện kế không
-        boolean hasDienKe = dienKeReponsitory.findAll().stream().anyMatch(dk -> dk.getMakh() != null && dk.getMakh().equals(makh));
+        boolean hasDienKe = dienKeReponsitory.findAll().stream()
+                .anyMatch(dk -> dk.getMakh() != null && dk.getMakh().equals(makh));
         
         if (hasDienKe) {
-            // Kiểm tra xem có hóa đơn không (thông qua điện kế)
-            // Lấy tất cả điện kế của khách hàng này
-            List<DienKe> dienKes = dienKeReponsitory.findAll().stream().filter(dk -> dk.getMakh() != null && dk.getMakh().equals(makh)).toList();
+            // Lấy tất cả điện kế của khách hàng này để kiểm tra hóa đơn
+            List<DienKe> dienKes = dienKeReponsitory.findAll().stream()
+                    .filter(dk -> dk.getMakh() != null && dk.getMakh().equals(makh))
+                    .toList();
+            
             boolean hasHoaDon = false;
             for(DienKe dk : dienKes) {
-                // Sửa logic tuỳ thuộc vào việc get danh sách hóa đơn theo madk có rỗng không
                 List<HoaDon> _hds = hoaDonReponsitory.findHistoryByMadk(dk.getMadk());
                 if (_hds != null && !_hds.isEmpty()) {
                     hasHoaDon = true;
@@ -75,17 +116,11 @@ public class KhachHangServiceimpl implements KhachHangService {
                 }
             }
 
-            if (hasHoaDon) {
-                // Ẩn (Soft-delete) nếu đã có hóa đơn
-                kh.setTrangthai(false);
-                khachHangReponsitory.save(kh);
-            } else {
-                // Có điện kế nhưng chưa có hóa đơn. Tuỳ yêu cầu có thể là xóa cứng hoặc cũng ẩn đi. Ở đây ta ẩn cho an toàn vì có liên kết với bảng DIENKE
-                kh.setTrangthai(false);
-                khachHangReponsitory.save(kh);
-            }
+            // Dù có hóa đơn hay chỉ mới có điện kế, ta đều ẩn (Soft-delete) để giữ toàn vẹn dữ liệu
+            kh.setTrangthai(false);
+            khachHangReponsitory.save(kh);
         } else {
-            // Không có liên kết, xóa cứng
+            // Không có bất kỳ liên kết nào, xóa cứng khỏi DB
             khachHangReponsitory.delete(kh);
         }
     }

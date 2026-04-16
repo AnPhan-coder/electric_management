@@ -7,23 +7,24 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class KhachHang {
+public class DienKe {
     @Id
-    @Column(columnDefinition = "varchar(13)", nullable = false)
+    @Column(columnDefinition = "varchar(8)", nullable = false)
+    private String madk;
+
+    @Column(name = "makh", columnDefinition = "varchar(13)")
     private String makh;
-    @Column(columnDefinition = "nvarchar(50)")
-    private String tenkh;
+
+    private LocalDateTime ngaysx;
+    private LocalDateTime ngaylap;
+
     @Column(columnDefinition = "nvarchar(100)")
-    private String diachi;
-    @Column(length = 10)
-    private String dt;
-    @Column(length = 12)
-    private String cmnd;
-    
-    @Column(name = "trangthai", columnDefinition = "bit default 1")
+    private String mota;
     private Boolean trangthai;
 }
