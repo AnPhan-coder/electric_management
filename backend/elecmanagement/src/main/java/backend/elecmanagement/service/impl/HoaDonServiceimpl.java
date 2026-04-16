@@ -1,5 +1,6 @@
 package backend.elecmanagement.service.impl;
 
+import backend.elecmanagement.dto.request.TheodoinoRequest;
 import backend.elecmanagement.entity.*;
 import backend.elecmanagement.reponsitory.CtHoaDonReponsitory;
 import backend.elecmanagement.reponsitory.DienKeReponsitory;
@@ -99,8 +100,8 @@ public class HoaDonServiceimpl implements HoaDonService {
     }
 
     @Override
-    public List<HoaDon> getDanhSachNo() {
-        return hoaDonReponsitory.findByTinhtrangFalseOrderByNgaylaphdDesc();
+    public List<TheodoinoRequest> getDanhSachNo() {
+        return hoaDonReponsitory.findDanhSachNo();
     }
 
     @Override

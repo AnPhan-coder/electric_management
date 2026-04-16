@@ -1,5 +1,6 @@
 package backend.elecmanagement.controller;
 
+import backend.elecmanagement.dto.request.TheodoinoRequest;
 import backend.elecmanagement.dto.request.TinhTienRequest;
 import backend.elecmanagement.entity.HoaDon;
 import backend.elecmanagement.service.HoaDonService;
@@ -32,7 +33,7 @@ public class HoaDonController {
     }
 
     @GetMapping("/no")
-    public ResponseEntity<java.util.List<HoaDon>> getDanhSachNo() {
+    public ResponseEntity<java.util.List<TheodoinoRequest>> getDanhSachNo() {
         return ResponseEntity.ok(hoaDonService.getDanhSachNo());
     }
 

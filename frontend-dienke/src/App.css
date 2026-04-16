@@ -616,3 +616,9 @@ body {
     padding-bottom: 16px;
   }
 }
+
+.tim-no{
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
