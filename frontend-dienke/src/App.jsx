@@ -13,6 +13,11 @@ function formatCurrency(value) {
   return Number(value).toLocaleString('vi-VN') + ' đ/kWh';
 }
 
+function formatMoney(value) {
+  if (value === null || value === undefined) return '—';
+  return Number(value).toLocaleString('vi-VN') + ' đ';
+}
+
 function formatDateTime(isoString) {
   if (!isoString) return '—';
   const d = new Date(isoString);
@@ -80,7 +85,7 @@ function SearchableDropdown({ items, displayKey, valueKey, value, onSelect, plac
 }
 
 function App() {
-  const [currentMenu, setCurrentMenu] = useState('dienke');
+  const [currentMenu, setCurrentMenu] = useState('hoadon');
 
   const renderContent = () => {
     switch (currentMenu) {
@@ -256,7 +261,6 @@ function HoaDonSection() {
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
 
-  // Lấy thời gian hiện tại chuẩn Local time để giới hạn lịch chặn tương lai
   const getCurrentDateTime = () => {
     const now = new Date();
     now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
@@ -313,7 +317,6 @@ function HoaDonSection() {
       setError(`❌ Chỉ số cuối (${reqData.chisocuoi}) phải lớn hơn chỉ số đầu (${chiSoDau})!`);
       return;
     }
-    // Logic chặn chốt số ở tương lai (Check double)
     if (new Date(reqData.denngay) > new Date()) {
       setError("❌ Lỗi: Ngày chốt số không được vượt quá ngày giờ hiện tại!");
       return;
@@ -395,7 +398,7 @@ function HoaDonSection() {
               className="input-field"
               type="datetime-local"
               name="denngay"
-              max={maxDateTime} /* Chặn chọn ngày tương lai trên trình duyệt */
+              max={maxDateTime}
               onChange={handleChange}
               required
             />
@@ -408,16 +411,80 @@ function HoaDonSection() {
 
       {error && <div className="alert alert-error">{error}</div>}
 
+      {/* --- GIAO DIỆN HÓA ĐƠN V2 ĐÃ CẬP NHẬT --- */}
       {result && (
         <div className="bill-result">
-          <h3>✅ Lập Hóa Đơn Thành Công</h3>
-          <p>Mã Hóa Đơn: <strong>{result.mahd}</strong></p>
-          <p>Kỳ thanh toán: <strong>{result.ky}</strong></p>
-          <p>Chỉ số đầu / cuối: <strong>{result.chisodau} / {result.chisocuoi}</strong></p>
-          <p className="total-amount">
-            Tổng thành tiền:
-            <span>{result.tongthanhtien.toLocaleString('vi-VN')} VNĐ</span>
-          </p>
+          <div className="bill-header">
+            <h3>✅ Lập Hóa Đơn Thành Công</h3>
+            <span className="bill-badge">Đã chốt số</span>
+          </div>
+
+          <div className="bill-body">
+
+            {/* PANEL TRÁI: THÔNG TIN CHUNG */}
+            <div className="bill-info-panel">
+              <div className="bill-info-row">
+                <span className="bill-info-label">Mã Hóa Đơn:</span>
+                <span className="bill-info-value">{result.mahd}</span>
+              </div>
+              <div className="bill-info-row">
+                <span className="bill-info-label">Kỳ thanh toán:</span>
+                <span className="bill-info-value">{result.ky}</span>
+              </div>
+              <div className="bill-info-row">
+                <span className="bill-info-label">Chỉ số (Đầu - Cuối):</span>
+                <span className="bill-info-value">{result.chisodau} <span style={{ color: '#94a3b8', margin: '0 5px' }}>→</span> {result.chisocuoi}</span>
+              </div>
+              <div className="bill-info-row">
+                <span className="bill-info-label">Tổng tiêu thụ:</span>
+                <span className="bill-info-value text-blue">{result.chisocuoi - result.chisodau} <small style={{ fontWeight: 500 }}>kWh</small></span>
+              </div>
+            </div>
+
+            {/* PANEL PHẢI: BẢNG CHI TIẾT BẬC THANG */}
+            <div className="bill-table-panel">
+              <div className="bill-table-header">
+                📊 Phân tích tiền điện theo bậc thang
+              </div>
+              <table className="bill-table">
+                <thead>
+                  <tr>
+                    <th className="text-left">Bậc</th>
+                    <th className="text-center">Số lượng</th>
+                    <th className="text-right">Đơn giá</th>
+                    <th className="text-right">Thành tiền</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {result.chiTiet && result.chiTiet.length > 0 ? (
+                    result.chiTiet.map((ct, idx) => (
+                      <tr key={idx}>
+                        <td className="text-left fw-bold">Bậc {ct.id.mabac}</td>
+                        <td className="text-center">{ct.dntt}</td>
+                        <td className="text-right">{formatMoney(ct.dongia)}</td>
+                        <td className="text-right text-green">{formatMoney(ct.dntt * ct.dongia)}</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="4" className="text-center" style={{ padding: '20px', color: '#94a3b8', fontStyle: 'italic' }}>
+                        Chưa có dữ liệu chi tiết.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+          </div>
+
+          {/* FOOTER: TỔNG TIỀN */}
+          <div className="bill-footer">
+            <div className="total-box">
+              <span className="total-label">Tổng thành tiền (Chưa VAT):</span>
+              <span className="total-value">{formatMoney(result.tongthanhtien)}</span>
+            </div>
+          </div>
         </div>
       )}
     </div>

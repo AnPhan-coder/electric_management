@@ -91,6 +91,7 @@ public class HoaDonServiceimpl implements HoaDonService {
         hoaDon.setTongthanhtien(tongThanhTien);
         hoaDon.setNgaylaphd(LocalDateTime.now());
         hoaDon.setTinhtrang(false);
+        hoaDon.setChiTiet(dsChiTiet);
 
         hoaDonReponsitory.save(hoaDon);
         ctHoaDonReponsitory.saveAll(dsChiTiet);
