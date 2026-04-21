@@ -4,8 +4,6 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
-import backend.elecmanagement.entity.DienKe;
-import backend.elecmanagement.entity.HoaDon;
 import backend.elecmanagement.entity.KhachHang;
 import backend.elecmanagement.reponsitory.DienKeReponsitory;
 import backend.elecmanagement.reponsitory.HoaDonReponsitory;
@@ -97,31 +95,11 @@ public class KhachHangServiceimpl implements KhachHangService {
         KhachHang kh = khachHangReponsitory.findById(makh)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy Khách Hàng: " + makh));
 
-        // Kiểm tra xem khách hàng có điện kế không
-        boolean hasDienKe = dienKeReponsitory.findAll().stream()
-                .anyMatch(dk -> dk.getMakh() != null && dk.getMakh().equals(makh));
-        
-        if (hasDienKe) {
-            // Lấy tất cả điện kế của khách hàng này để kiểm tra hóa đơn
-            List<DienKe> dienKes = dienKeReponsitory.findAll().stream()
-                    .filter(dk -> dk.getMakh() != null && dk.getMakh().equals(makh))
-                    .toList();
-            
-            boolean hasHoaDon = false;
-            for(DienKe dk : dienKes) {
-                List<HoaDon> _hds = hoaDonReponsitory.findHistoryByMadk(dk.getMadk());
-                if (_hds != null && !_hds.isEmpty()) {
-                    hasHoaDon = true;
-                    break;
-                }
-            }
-
-            // Dù có hóa đơn hay chỉ mới có điện kế, ta đều ẩn (Soft-delete) để giữ toàn vẹn dữ liệu
-            kh.setTrangthai(false);
-            khachHangReponsitory.save(kh);
-        } else {
-            // Không có bất kỳ liên kết nào, xóa cứng khỏi DB
-            khachHangReponsitory.delete(kh);
-        }
+        kh.setTrangthai(!kh.getTrangthai()); 
+        khachHangReponsitory.save(kh);
+    }
+    @Override
+    public List<KhachHang> findAll() {
+        return khachHangReponsitory.findAll();
     }
 }

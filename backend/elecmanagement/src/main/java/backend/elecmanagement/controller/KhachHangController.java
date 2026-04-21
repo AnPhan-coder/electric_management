@@ -29,7 +29,7 @@ public class KhachHangController {
 
     @GetMapping
     public ResponseEntity<List<KhachHang>> getDanhSachKhachHang() {
-        return ResponseEntity.ok(khachHangService.findAllActive());
+        return ResponseEntity.ok(khachHangService.findAll());
     }
 
     @PostMapping

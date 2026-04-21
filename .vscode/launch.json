@@ -2,6 +2,13 @@
     "configurations": [
         {
             "type": "java",
+            "name": "ElecmanagementApplication",
+            "request": "launch",
+            "mainClass": "ElecmanagementApplication",
+            "projectName": "elecmanagement"
+        },
+        {
+            "type": "java",
             "name": "Spring Boot-ElecmanagementApplication<elecmanagement>",
             "request": "launch",
             "cwd": "${workspaceFolder}",

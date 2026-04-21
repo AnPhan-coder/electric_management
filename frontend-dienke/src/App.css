@@ -555,3 +555,28 @@ body {
   font-size: 1.1rem;
   font-style: italic;
 }
+/* Nhãn trạng thái */
+.badge {
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+}
+.status-active {
+  background-color: #e6fcf5;
+  color: #0ca678;
+}
+.status-locked {
+  background-color: #fff5f5;
+  color: #fa5252;
+}
+
+/* Nút thành công (để mở lại dịch vụ) */
+.btn-success {
+  background-color: #40c057;
+  color: white;
+  border: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+}
