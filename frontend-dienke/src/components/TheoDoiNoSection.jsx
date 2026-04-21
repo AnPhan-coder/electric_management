@@ -22,7 +22,8 @@ export default function TheoDoiNoSection() {
   const [message, setMessage] = useState(null);
   const [searchKy, setSearchKy] = useState('');
   const [searchHD, setSearchHD] = useState('');
-  const [isquahan, setquahan] = useState(false);
+  const [mucQuaHan, setMucQuaHan] = useState(0);
+  const [selectedHD, setSelectedHD] = useState(null);
 
 
   const fetchDanhSachNo = useCallback(async () => {
@@ -69,7 +70,7 @@ export default function TheoDoiNoSection() {
     const matchKy = !searchKy || (hd.ky && hd.ky.toString().toLowerCase().includes(searchKy.toLowerCase()));
     const matchTen = !searchHD || (hd.mahd && hd.mahd.toLowerCase().includes(searchHD.toLowerCase()));
     const soNgayNo = tinhSoNgayNo(hd.ngaylaphd);
-    const matchOverdue = !isquahan || soNgayNo > 10;
+    const matchOverdue = mucQuaHan === 0 || soNgayNo >= mucQuaHan;
     return matchKy && matchTen && matchOverdue;
   });
   const handleNhacNo = (hd) => {
@@ -83,52 +84,65 @@ export default function TheoDoiNoSection() {
     window.open(smsUrl, '_self');
   };
 
+  
+
 
   return (
     <div className="card">
       <div className='tim-no'>
         <div>
-          <h3>Tìm hóa đơn nợ:</h3>
-          <div >
-            <form onSubmit={(e) => e.preventDefault()} style={{ display: 'flex', gap: '16px' }}>
-              <div>
-                <label >Kỳ hóa đơn:</label>
-                <input
-                  type="text"
-                  id="ky"
-                  name="ky"
-                  placeholder="VD: 10/2023"
-                  value={searchKy}
-                  onChange={(e) => setSearchKy(e.target.value)}
-                />
-              </div>
-              <div>
-                <label >Mã hóa đơn:</label>
-                <input
-                  type="text"
-                  id="mahd"
-                  name="mahd"
-                  placeholder="VD: HD000001"
-                  value={searchHD}
-                  onChange={(e) => setSearchHD(e.target.value)}
-                />
-              </div>
-            </form>
+          <h2>Tìm hóa đơn nợ:</h2>
+          <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '10px' }} >
+            <div>
+              <label >Kỳ hóa đơn:</label>
+              <input
+                style={{ borderRadius: '4px', border: '1px solid #ccc', padding: '4px 8px', height: '32px', width: '200px' }}
+                type="text"
+                id="ky"
+                name="ky"
+                placeholder="VD: 10/2023"
+                value={searchKy}
+                onChange={(e) => setSearchKy(e.target.value)}
+              />
+            </div>
+            <div>
+              <label >Mã hóa đơn:</label>
+              <input
+                style={{ borderRadius: '4px', border: '1px solid #ccc', padding: '4px 8px', height: '32px', width: '200px' }}
+                type="text"
+                id="mahd"
+                name="mahd"
+                placeholder="VD: HD000001"
+                value={searchHD}
+                onChange={(e) => setSearchHD(e.target.value)}
+              />
+            </div>
+            <div>
+              <label style={{ fontWeight: 'bold' }}>Lọc theo thời gian nợ:</label>
+              <select
+
+                style={{
+                  width: '220px',
+                  height: '32px',
+                  borderRadius: '4px',
+                  border: '1px solid #ccc',
+                  padding: '6px 10px',
+
+                }}
+                value={mucQuaHan}
+                onChange={(e) => setMucQuaHan(Number(e.target.value))}
+              >
+                <option value={0}>Tất cả nợ</option>
+                <option value={10}>Nợ trên 10 ngày</option>
+                <option value={20}>Nợ trên 20 ngày</option>
+                <option value={30}>Nợ trên 1 tháng (30 ngày)</option>
+              </select>
+            </div>
+
           </div>
         </div>
-        <div >
-          <button
-            className={`btn ${isquahan ? 'btn-danger' : 'btn-outline-danger'}`}
-            onClick={() => setquahan(!isquahan)}
-            style={{
-              backgroundColor: isquahan ? '#e74c3c' : 'transparent',
-              color: isquahan ? 'white' : '#e74c3c',
-              border: '1px solid #e74c3c'
-            }}
-          >
-            {isquahan ? 'Đang xem Quá hạn' : 'Xem nợ quá hạn (>10 ngày)'}
-          </button>
-          <button className="btn btn-edit" onClick={fetchDanhSachNo}  style={{ marginLeft: '8px' }}>Làm mới danh sách</button>
+        <div style={{ paddingTop: '20px', textAlign: 'right' }} >
+          <button className="btn btn-primary" onClick={fetchDanhSachNo} style={{ marginLeft: '8px' }}>Làm mới danh sách</button>
         </div>
       </div>
 
@@ -147,6 +161,8 @@ export default function TheoDoiNoSection() {
           {searchKy && `Không tìm thấy hóa đơn nợ nào cho kỳ "${searchKy}"`}
           {searchHD && ` Không tìm thấy hóa đơn nợ nào cho hóa đơn "${searchHD}".:`}
           {!searchKy && !searchHD && "Không tìm thấy hóa đơn nợ nào."}
+
+
         </div>
       ) : (
         <div className="table-wrapper">
@@ -154,9 +170,7 @@ export default function TheoDoiNoSection() {
             <thead >
               <tr >
                 <th>Mã HĐ</th>
-                <th>Tên Khách Hàng</th>
-                <th>Địa chỉ</th>
-                <th>Số điện thoại</th>
+                <th>Khách hàng</th>
                 <th>Kỳ</th>
                 <th>T.Gian Chốt</th>
                 <th>Chỉ số (Đầu - Cuối)</th>
@@ -166,11 +180,9 @@ export default function TheoDoiNoSection() {
             </thead>
             <tbody>
               {dsNoHienThi.map(hd => (
-                <tr key={hd.mahd} style={{ backgroundColor: 'var(--bg-error)' }}>
+                <tr key={hd.mahd} style={{ backgroundColor: 'var(--bg-error)', cursor: 'pointer' }} onClick={() => setSelectedHD(hd)}>
                   <td className="cell-center"><strong>{hd.mahd}</strong></td>
                   <td>{hd.tenkh}</td>
-                  <td>{hd.diachi}</td>
-                  <td className="cell-center">{hd.dt}</td>
                   <td className="cell-center">{hd.ky}</td>
                   <td className="cell-date">{formatDateTime(hd.ngaylaphd)}</td>
                   <td className="cell-center">{hd.chisodau} - {hd.chisocuoi}</td>
@@ -180,12 +192,12 @@ export default function TheoDoiNoSection() {
                     </span>
                   </td>
                   <td className="cell-center">
-                    <button className="btn btn-success" onClick={() => handleThanhToan(hd.mahd)} style={{ marginRight: '8px' }}>
+                    <button className="" onClick={() => handleThanhToan(hd.mahd)} style={{ borderRadius: '4px', marginRight: '8px', backgroundColor: '#128835', color: '#fff' }}>
                       Đã Thu
                     </button>
                     <button
-                      className="btn"
-                      style={{ backgroundColor: '#f39c12', color: 'white' }}
+                      className=""
+                      style={{ borderRadius: '4px', backgroundColor: '#be1717', color: '#fff' }}
                       onClick={() => handleNhacNo(hd)}
                     >
                       Nhắc Nợ
@@ -197,6 +209,72 @@ export default function TheoDoiNoSection() {
           </table>
         </div>
       )}
+      {
+    selectedHD && (
+      <div className="modal-overlay" style={{
+        position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
+        backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000
+      }}>
+        <div className="modal-content" style={{
+          backgroundColor: '#fff', padding: '30px', borderRadius: '12px',
+          width: '600px', boxShadow: '0 8px 30px rgba(0,0,0,0.3)'
+        }}>
+          <h2 style={{ textAlign: 'center', color: '#2c3e50', marginBottom: '20px', borderBottom: '2px solid #3498db', paddingBottom: '10px' }}>
+            CHI TIẾT HÓA ĐƠN TIỀN ĐIỆN
+          </h2>
+
+          {/* Thông tin khách hàng */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '20px' }}>
+            <div>
+              <p><strong>Khách hàng:</strong> {selectedHD.tenkh}</p>
+              <p><strong>SĐT:</strong> {selectedHD.dt}</p>
+              <p><strong>Địa chỉ:</strong> {selectedHD.diachi}</p>
+            </div>
+            <div style={{ textAlign: 'right' }}>
+              <p><strong>Mã HĐ:</strong> <span style={{ color: '#e67e22' }}>{selectedHD.mahd}</span></p>
+              <p><strong>Kỳ:</strong> {selectedHD.ky}</p>
+              <p><strong>Mã điện kế:</strong> {selectedHD.madk || 'DK-001'}</p>
+            </div>
+          </div>
+
+          {/* Bảng thông số kỹ thuật */}
+          <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px' }}>
+            <thead>
+              <tr style={{ backgroundColor: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
+                <th style={{ padding: '10px', textAlign: 'left' }}>Chỉ số đầu</th>
+                <th style={{ padding: '10px', textAlign: 'center' }}>Chỉ số cuối</th>
+                <th style={{  textAlign: 'right' }}>Sản Lượng (kWh)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style={{ padding: '10px' }}>{selectedHD.chisodau}</td>
+                <td style={{ padding: '10px',textAlign: 'center' }}>{selectedHD.chisocuoi}</td>
+                <td style={{  textAlign: 'right' }}>{selectedHD.chisocuoi - selectedHD.chisodau} kWh</td>
+              </tr>
+            </tbody>
+          </table>
+
+          {/* Tổng kết tiền */}
+          <div style={{ borderTop: '2px solid #eee', paddingTop: '15px', textAlign: 'right' }}>
+            <h3 style={{ margin: 0 }}>
+              THÀNH TIỀN: <span style={{ color: '#be1717', fontSize: '1.5rem' }}>{formatCurrency(selectedHD.tongthanhtien)}</span>
+            </h3>
+          </div>
+
+          <div style={{ marginTop: '25px', textAlign: 'center' }}>
+            <button
+              className="btn btn-secondary"
+              onClick={() => setSelectedHD(null)}
+              style={{ padding: '10px 30px', borderRadius: '20px', cursor: 'pointer' }}
+            >
+              Đóng cửa sổ
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
     </div>
   );
 }

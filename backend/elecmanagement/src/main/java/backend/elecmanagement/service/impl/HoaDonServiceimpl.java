@@ -1,6 +1,6 @@
 package backend.elecmanagement.service.impl;
 
-import backend.elecmanagement.dto.request.TheodoinoRequest;
+import backend.elecmanagement.dto.request.CTHOADONNO;
 import backend.elecmanagement.entity.*;
 import backend.elecmanagement.reponsitory.CtHoaDonReponsitory;
 import backend.elecmanagement.reponsitory.DienKeReponsitory;
@@ -101,8 +101,18 @@ public class HoaDonServiceimpl implements HoaDonService {
     }
 
     @Override
-    public List<TheodoinoRequest> getDanhSachNo() {
+    public List<CTHOADONNO> getDanhSachNo() {
         return hoaDonReponsitory.findDanhSachNo();
+    }
+
+    @Override
+    public CTHOADONNO findChiTietByMaHD(String mahd) {
+        CTHOADONNO dto = hoaDonReponsitory.getChiTietHoaDon(mahd);
+
+        if (dto == null) {
+            throw new RuntimeException("Không tìm thấy hóa đơn với mã: " + mahd);
+        }
+        return dto;
     }
 
     @Override

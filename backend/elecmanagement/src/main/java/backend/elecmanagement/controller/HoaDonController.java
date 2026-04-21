@@ -1,6 +1,6 @@
 package backend.elecmanagement.controller;
 
-import backend.elecmanagement.dto.request.TheodoinoRequest;
+import backend.elecmanagement.dto.request.CTHOADONNO;
 import backend.elecmanagement.dto.request.TinhTienRequest;
 import backend.elecmanagement.entity.HoaDon;
 import backend.elecmanagement.service.HoaDonService;
@@ -32,7 +32,7 @@ public class HoaDonController {
     }
 
     @GetMapping("/no")
-    public ResponseEntity<java.util.List<TheodoinoRequest>> getDanhSachNo() {
+    public ResponseEntity<java.util.List<CTHOADONNO>> getDanhSachNo() {
         return ResponseEntity.ok(hoaDonService.getDanhSachNo());
     }
 
@@ -51,5 +51,13 @@ public class HoaDonController {
         } catch (Exception e) {
             return ResponseEntity.ok(0);
         }
+    }
+    @GetMapping ("/{mahd}")
+    public ResponseEntity<CTHOADONNO> xemChiTiet(@PathVariable String mahd) {
+        CTHOADONNO dto = hoaDonService.findChiTietByMaHD(mahd);
+        if (dto != null) {
+            return ResponseEntity.ok(dto);
+        }
+        return ResponseEntity.notFound().build();
     }
 }

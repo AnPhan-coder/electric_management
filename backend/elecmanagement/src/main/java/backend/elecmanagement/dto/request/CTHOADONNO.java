@@ -6,7 +6,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Data
-public class TheodoinoRequest {
+public class CTHOADONNO {
     private String mahd;
     private String ky;
     private Integer chisodau;
@@ -16,8 +16,9 @@ public class TheodoinoRequest {
     private String tenkh;
     private String diachi;
     private String dt;
+    private  String madk;
 
-    public TheodoinoRequest(String mahd, String ky, Integer chisodau, Integer chisocuoi,LocalDateTime ngaylaphd, BigDecimal tongthanhtien, String tenkh, String diachi, String dt ){
+    public CTHOADONNO(String mahd, String ky, Integer chisodau, Integer chisocuoi, LocalDateTime ngaylaphd, BigDecimal tongthanhtien, String tenkh, String diachi, String dt , String madk){
         this.mahd=mahd;
         this.ky=ky;
         this.chisodau=chisodau;
@@ -27,5 +28,6 @@ public class TheodoinoRequest {
         this.tenkh=tenkh;
         this.diachi=diachi;
         this.dt=dt;
+        this.madk=madk;
     }
 }
