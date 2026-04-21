@@ -27,7 +27,4 @@ public class DienKe {
     @Column(columnDefinition = "nvarchar(100)")
     private String mota;
     private Boolean trangthai;
-
-    @Column(columnDefinition = "nvarchar(200)")
-    private String diachi;
 }

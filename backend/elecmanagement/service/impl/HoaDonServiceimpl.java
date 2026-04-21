@@ -1,6 +1,5 @@
 package backend.elecmanagement.service.impl;
 
-import backend.elecmanagement.dto.request.TheodoinoRequest;
 import backend.elecmanagement.entity.*;
 import backend.elecmanagement.reponsitory.CtHoaDonReponsitory;
 import backend.elecmanagement.reponsitory.DienKeReponsitory;
@@ -15,6 +14,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class HoaDonServiceimpl implements HoaDonService {
@@ -92,25 +92,10 @@ public class HoaDonServiceimpl implements HoaDonService {
         hoaDon.setTongthanhtien(tongThanhTien);
         hoaDon.setNgaylaphd(LocalDateTime.now());
         hoaDon.setTinhtrang(false);
-        hoaDon.setChiTiet(dsChiTiet);
 
         hoaDonReponsitory.save(hoaDon);
         ctHoaDonReponsitory.saveAll(dsChiTiet);
 
         return hoaDon;
-    }
-
-    @Override
-    public List<TheodoinoRequest> getDanhSachNo() {
-        return hoaDonReponsitory.findDanhSachNo();
-    }
-
-    @Override
-    @Transactional
-    public void thanhToanHoaDon(String mahd) {
-        HoaDon hoaDon = hoaDonReponsitory.findById(mahd)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy hóa đơn: " + mahd));
-        hoaDon.setTinhtrang(true);
-        hoaDonReponsitory.save(hoaDon);
     }
 }

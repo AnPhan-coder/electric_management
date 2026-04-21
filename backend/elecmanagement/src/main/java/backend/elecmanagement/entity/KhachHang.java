@@ -19,9 +19,9 @@ public class KhachHang {
     private String tenkh;
     @Column(columnDefinition = "nvarchar(100)")
     private String diachi;
-    @Column(columnDefinition = "nvarchar(12)")
+    @Column(length = 10)
     private String dt;
-    @Column(columnDefinition = "varchar(9)")
+    @Column(length = 12)
     private String cmnd;
     
     @Column(name = "trangthai", columnDefinition = "bit default 1")

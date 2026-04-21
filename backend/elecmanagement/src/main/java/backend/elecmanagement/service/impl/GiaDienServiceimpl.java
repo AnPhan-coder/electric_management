@@ -30,11 +30,7 @@ public class GiaDienServiceimpl implements GiaDienService {
         return giaDienReponsitory.findAllOrderByMabacAsc();
     }
 
-    /**
-     * Cập nhật đơn giá từng bậc.
-     * DB Trigger (trg_LuuLichSuGiaDien) sẽ tự động ghi bản ghi cũ vào LICHSU_GIADIEN
-     * sau mỗi lệnh UPDATE trên bảng GIADIEN.
-     */
+
     @Override
     @Transactional
     public void updateBangGia(List<GiaDienUpdateRequest> updates) {
