@@ -15,4 +15,8 @@ public interface GiaDienService {
     List<LichSuGiaDien> getDanhSachPhienLichSu();
 
     List<LichSuGiaDien> getChiTietPhien(Integer malichsuDaiDien);
+
+    void deleteBacCaoNhat(Integer mabac);
+
+    void themBacCaoNhat(backend.elecmanagement.dto.request.ThemBacRequest request);
 }

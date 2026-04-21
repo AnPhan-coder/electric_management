@@ -45,4 +45,24 @@ public class GiaDienController {
             @PathVariable Integer malichsuDaiDien) {
         return ResponseEntity.ok(giaDienService.getChiTietPhien(malichsuDaiDien));
     }
+
+    @DeleteMapping("/{mabac}")
+    public ResponseEntity<?> deleteBacCaoNhat(@PathVariable Integer mabac) {
+        try {
+            giaDienService.deleteBacCaoNhat(mabac);
+            return ResponseEntity.ok().body("Xóa bậc cao nhất thành công");
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @PostMapping("/them-bac")
+    public ResponseEntity<?> themBacCaoNhat(@RequestBody backend.elecmanagement.dto.request.ThemBacRequest request) {
+        try {
+            giaDienService.themBacCaoNhat(request);
+            return ResponseEntity.ok().body("Thêm bậc mức giá mới thành công");
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 }

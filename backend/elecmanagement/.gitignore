@@ -31,3 +31,9 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Custom/User ###
+*.log
+run_log.txt
+run_log2.txt
+src/main/resources/application.properties

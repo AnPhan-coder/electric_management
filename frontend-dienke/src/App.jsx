@@ -522,23 +522,149 @@ function BangGiaDienSection() {
 function TabGiaHienTai() {
   const [bangGia, setBangGia] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isAdding, setIsAdding] = useState(false);
+  const [newTier, setNewTier] = useState({ densokwBacHienTai: '', dongiaBacMoi: '' });
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValues, setEditValues] = useState({});
+  const [message, setMessage] = useState('');
+  const [isError, setIsError] = useState(false);
 
-  useEffect(() => {
+  const loadBangGia = () => {
+    setLoading(true);
     fetch(`${API_URL}/giadien`)
       .then(res => res.json())
       .then(data => { setBangGia(data); setLoading(false); })
       .catch(err => { console.error(err); setLoading(false); });
+  };
+
+  useEffect(() => {
+    loadBangGia();
   }, []);
+
+  const toggleEdit = () => {
+    if (!isEditing) {
+      const initialValues = {};
+      bangGia.forEach(b => { initialValues[b.mabac] = b.dongia; });
+      setEditValues(initialValues);
+    }
+    setIsEditing(!isEditing);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!window.confirm("Chốt lưu bảng giá mới? Bảng cũ sẽ được tự động lưu vào Lịch sử.")) return;
+    setMessage('');
+    setIsError(false);
+    try {
+      const updates = Object.keys(editValues).map(mabac => ({
+        mabac: parseInt(mabac),
+        dongia: parseFloat(editValues[mabac])
+      }));
+      const response = await fetch(`${API_URL}/giadien`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates)
+      });
+      if (response.ok) {
+        setMessage("✅ Cập nhật đơn giá thành công!");
+        setIsError(false);
+        setIsEditing(false);
+        loadBangGia();
+      } else {
+        const errorText = await response.text();
+        setMessage(`❌ Lỗi: ${errorText}`);
+        setIsError(true);
+      }
+    } catch (err) {
+      setMessage(`❌ Lỗi kết nối: ${err.message}`);
+      setIsError(true);
+    }
+  };
+
+  const handleDelete = async (mabac) => {
+    if (!window.confirm(`Bạn có chắc chắn muốn xóa Bậc ${mabac} không?`)) return;
+    setMessage('');
+    setIsError(false);
+    try {
+      const response = await fetch(`${API_URL}/giadien/${mabac}`, { method: 'DELETE' });
+      if (response.ok) {
+        setMessage("✅ Xóa bậc thành công!");
+        setIsError(false);
+        loadBangGia();
+      } else {
+        const errorText = await response.text();
+        setMessage(`❌ Không thể xóa: ${errorText}`);
+        setIsError(true);
+      }
+    } catch (error) {
+      setMessage(`❌ Lỗi kết nối: ${error.message}`);
+      setIsError(true);
+    }
+  };
+
+  const handleAddSubmit = async (e) => {
+    e.preventDefault();
+    if (!window.confirm(`Bạn có chắc chắn muốn phát sinh thêm bậc mới không?\nBảng giá cũ hiện tại sẽ được lưu vào Lịch sử.`)) return;
+    setMessage('');
+    setIsError(false);
+
+    try {
+      const payload = {
+        densokwBacHienTai: parseInt(newTier.densokwBacHienTai),
+        dongiaBacMoi: parseFloat(newTier.dongiaBacMoi)
+      };
+      
+      const response = await fetch(`${API_URL}/giadien/them-bac`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (response.ok) {
+        setMessage("✅ Thêm bậc mới thành công!");
+        setIsError(false);
+        setIsAdding(false);
+        setNewTier({ densokwBacHienTai: '', dongiaBacMoi: '' });
+        loadBangGia();
+      } else {
+        const errorText = await response.text();
+        setMessage(`❌ Lỗi thêm bậc: ${errorText}`);
+        setIsError(true);
+      }
+    } catch (error) {
+      setMessage(`❌ Lỗi kết nối: ${error.message}`);
+      setIsError(true);
+    }
+  };
 
   if (loading) return <div>Đang tải...</div>;
   if (bangGia.length === 0) return <div>Chưa có dữ liệu bảng giá.</div>;
 
+  const highestTier = bangGia[bangGia.length - 1];
+
   return (
     <div className="table-wrapper">
+      {message && (
+        <div className={`alert ${isError ? 'alert-error' : 'alert-success'}`} style={{ marginBottom: '15px' }}>
+          {message}
+        </div>
+      )}
+      <div style={{ marginBottom: '15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h3 style={{ margin: 0, fontSize: '18px', color: '#1e293b' }}>Bảng Giá Hiện Tại</h3>
+        <div>
+          {!isEditing ? (
+            <button className="btn" onClick={toggleEdit}>✏️ Sửa Đơn Giá</button>
+          ) : (
+            <>
+              <button className="btn" style={{ marginRight: '10px' }} onClick={toggleEdit}>Hủy</button>
+              <button className="btn btn-primary" onClick={handleSaveEdit}>💾 Lưu Thay Đổi</button>
+            </>
+          )}
+        </div>
+      </div>
       <table className="price-table">
         <thead>
           <tr>
-            <th>Bậc</th><th>Tên bậc</th><th>Từ (kWh)</th><th>Đến (kWh)</th><th>Đơn giá (đ)</th><th>Ngày áp dụng</th>
+            <th>Bậc</th><th>Tên bậc</th><th>Từ (kWh)</th><th>Đến (kWh)</th><th>Đơn giá (đ)</th><th>Ngày áp dụng</th><th>Thao tác</th>
           </tr>
         </thead>
         <tbody>
@@ -548,18 +674,150 @@ function TabGiaHienTai() {
               <td>{bac.tenbac}</td>
               <td>{bac.tusokw}</td>
               <td>{bac.densokw ?? '∞'}</td>
-              <td style={{ color: '#059669', fontWeight: 'bold' }}>{formatCurrency(bac.dongia)}</td>
+              <td style={{ color: '#059669', fontWeight: 'bold' }}>
+                {isEditing ? (
+                  <input 
+                    type="number" 
+                    className="input-field" 
+                    value={editValues[bac.mabac] ?? ''} 
+                    onChange={e => setEditValues({...editValues, [bac.mabac]: e.target.value})}
+                    style={{ width: '120px', padding: '4px 8px', margin: 0 }}
+                  />
+                ) : formatCurrency(bac.dongia)}
+              </td>
               <td>{formatDateTime(bac.ngayapdung)}</td>
+              <td>
+                {bac.mabac === highestTier.mabac && bangGia.length > 1 && !isEditing && (
+                  <button className="btn" style={{ padding: '4px 10px', fontSize: '13px', backgroundColor: '#fee2e2', color: '#ef4444', border: '1px solid #fecaca' }} onClick={() => handleDelete(bac.mabac)}>🗑 Xóa</button>
+                )}
+              </td>
             </tr>
           ))}
         </tbody>
       </table>
+
+      {!isAdding ? (
+        <div style={{ marginTop: '15px', textAlign: 'right' }}>
+          <button className="btn btn-primary" onClick={() => setIsAdding(true)}>+ Thêm Bậc Mới</button>
+        </div>
+      ) : (
+        <div className="card" style={{ marginTop: '20px', border: '1px dashed #3b82f6', backgroundColor: '#eff6ff', boxShadow: 'none' }}>
+          <h4 style={{ marginBottom: '10px', color: '#1e40af' }}>✨ Khởi tạo Bậc {highestTier.mabac + 1} mới</h4>
+          <form onSubmit={handleAddSubmit} style={{ display: 'flex', gap: '15px', alignItems: 'flex-end' }}>
+            <div className="form-group" style={{ marginBottom: 0, flex: 1 }}>
+              <label>Khép cận trên cho Bậc {highestTier.mabac} (kWh)</label>
+              <input 
+                className="input-field" 
+                type="number" 
+                required 
+                placeholder={`Lớn hơn ${highestTier.tusokw}`}
+                value={newTier.densokwBacHienTai}
+                onChange={(e) => setNewTier({ ...newTier, densokwBacHienTai: e.target.value })}
+              />
+            </div>
+            <div className="form-group" style={{ marginBottom: 0, flex: 1 }}>
+              <label>Đơn giá cho Bậc {highestTier.mabac + 1} mới (đ/kWh)</label>
+              <input 
+                className="input-field" 
+                type="number" 
+                required 
+                placeholder="VD: 3500"
+                value={newTier.dongiaBacMoi}
+                onChange={(e) => setNewTier({ ...newTier, dongiaBacMoi: e.target.value })}
+              />
+            </div>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button type="button" className="btn" onClick={() => setIsAdding(false)}>Hủy</button>
+              <button type="submit" className="btn btn-primary">Lưu Bậc</button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   );
 }
 
 function TabLichSuGia() {
-  return <div>Đang xây dựng tính năng lịch sử...</div>;
+  const [phienList, setPhienList] = useState([]);
+  const [selectedPhien, setSelectedPhien] = useState(null);
+  const [chiTiet, setChiTiet] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch(`${API_URL}/giadien/lichsu`)
+      .then(res => res.json())
+      .then(data => { setPhienList(data); setLoading(false); })
+      .catch(err => { console.error(err); setLoading(false); });
+  }, []);
+
+  const handleSelectPhien = (malichsu) => {
+    fetch(`${API_URL}/giadien/lichsu/${malichsu}`)
+      .then(res => res.json())
+      .then(data => {
+        setSelectedPhien(malichsu);
+        setChiTiet(data);
+      })
+      .catch(err => console.error(err));
+  };
+
+  if (loading) return <div>Đang tải...</div>;
+  if (phienList.length === 0) return <div>Chưa có dữ liệu lịch sử thay đổi bảng giá.</div>;
+
+  return (
+    <div style={{ display: 'flex', gap: '20px', marginTop: '10px' }}>
+      <div style={{ flex: '1', borderRight: '1px solid #e2e8f0', paddingRight: '15px' }}>
+        <h4 style={{ marginBottom: '15px' }}>⏱ Các lần thay đổi giá</h4>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          {phienList.map(phien => (
+            <div 
+              key={phien.malichsu} 
+              onClick={() => handleSelectPhien(phien.malichsu)}
+              style={{
+                padding: '12px', border: '1px solid #cbd5e1', borderRadius: '6px', 
+                cursor: 'pointer', backgroundColor: selectedPhien === phien.malichsu ? '#eff6ff' : '#fff',
+                borderColor: selectedPhien === phien.malichsu ? '#3b82f6' : '#cbd5e1'
+              }}
+            >
+              <div style={{ fontWeight: 'bold', color: '#1e293b' }}>Cập nhật lúc:</div>
+              <div style={{ color: '#475569', fontSize: '14px', marginTop: '4px' }}>{formatDateTime(phien.ngaythaydoi)}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+      
+      <div style={{ flex: '2', paddingLeft: '5px' }}>
+        {!selectedPhien ? (
+          <div style={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', color: '#94a3b8' }}>
+            ← Chọn một mốc thay đổi bên trái để xem chi tiết
+          </div>
+        ) : (
+          <div>
+            <h4 style={{ marginBottom: '15px', color: '#1e293b' }}>Chi tiết Bảng giá cũ</h4>
+            <div className="table-wrapper">
+              <table className="price-table">
+                <thead>
+                  <tr>
+                    <th>Bậc</th><th>Từ (kWh)</th><th>Đến (kWh)</th><th>Đơn giá cũ (đ)</th><th>Ngày áp dụng</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {chiTiet.map(bac => (
+                    <tr key={bac.malichsu}>
+                      <td>Bậc {bac.mabac}</td>
+                      <td>{bac.tusokw}</td>
+                      <td>{bac.densokw ?? '∞'}</td>
+                      <td style={{ color: '#64748b', textDecoration: 'line-through' }}>{formatCurrency(bac.dongia)}</td>
+                      <td>{formatDateTime(bac.ngayapdung)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
 
 export default App;
