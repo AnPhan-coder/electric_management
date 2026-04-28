@@ -25,7 +25,7 @@ public class HoaDonServiceimpl implements HoaDonService {
     private final GiaDienReponsitory giaDienReponsitory;
 
     public HoaDonServiceimpl(HoaDonReponsitory hoaDonReponsitory, CtHoaDonReponsitory ctHoaDonReponsitory,
-                             DienKeReponsitory dienKeReponsitory, GiaDienReponsitory giaDienReponsitory) {
+            DienKeReponsitory dienKeReponsitory, GiaDienReponsitory giaDienReponsitory) {
         this.hoaDonReponsitory = hoaDonReponsitory;
         this.ctHoaDonReponsitory = ctHoaDonReponsitory;
         this.dienKeReponsitory = dienKeReponsitory;
@@ -34,17 +34,22 @@ public class HoaDonServiceimpl implements HoaDonService {
 
     @Transactional
     public HoaDon tinhTienDien(String madk, int chisocuoi, LocalDateTime denngay) {
-        // 1. Kiểm tra rỗng và truy vấn Điện kế
+        // Kiểm tra rỗng và truy vấn Điện kế
         DienKe dienKe = dienKeReponsitory.findById(madk)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy Điện kế"));
 
-        // 2. Truy vấn hóa đơn kỳ trước lấy chỉ số đầu (SỬA Ở ĐÂY)
+        // Truy vấn hóa đơn kỳ trước lấy chỉ số đầu (SỬA Ở ĐÂY)
         List<HoaDon> previousBills = hoaDonReponsitory.findHistoryByMadk(madk);
 
         int chisodau = previousBills.isEmpty() ? 0 : previousBills.get(0).getChisocuoi();
         LocalDateTime tungay = previousBills.isEmpty() ? dienKe.getNgaylap() : previousBills.get(0).getDenngay();
-
-        // 3. Kiểm tra logic chỉ số
+        
+        if (!denngay.isAfter(tungay)) {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+            throw new RuntimeException(
+                    "Ngày chốt số mới phải LỚN HƠN ngày chốt số kỳ trước (" + tungay.format(formatter) + ")");
+        }
+        // Kiểm tra logic chỉ số
         if (chisocuoi <= chisodau) {
             throw new RuntimeException("Lỗi: Chỉ số cuối phải lớn hơn chỉ số đầu");
         }
@@ -54,19 +59,21 @@ public class HoaDonServiceimpl implements HoaDonService {
         int dnttConLai = dnttTong;
         BigDecimal tongThanhTien = BigDecimal.ZERO;
 
-        String mahd = "HD" + (System.currentTimeMillis() % 100000000);
+        String mahd = "" + (System.currentTimeMillis() % 100000000);
         String ky = denngay.format(DateTimeFormatter.ofPattern("MM/yyyy"));
 
         List<GiaDien> bangGia = giaDienReponsitory.findAllOrderByMabacAsc();
         List<CtHoaDon> dsChiTiet = new ArrayList<>();
 
         for (GiaDien bac : bangGia) {
-            if (dnttConLai <= 0) break;
+            if (dnttConLai <= 0)
+                break;
 
             int limitTu = bac.getTusokw();
             int limitDen = (bac.getDensokw() != null) ? bac.getDensokw() : Integer.MAX_VALUE;
             int limitKw = limitDen - limitTu + 1;
-            if(bac.getTusokw() == 0) limitKw = limitDen;
+            if (bac.getTusokw() == 0)
+                limitKw = limitDen;
 
             int kwTinhToan = Math.min(dnttConLai, limitKw);
             BigDecimal thanhTienBac = bac.getDongia().multiply(new BigDecimal(kwTinhToan));

@@ -89,7 +89,7 @@ function SearchableDropdown({ items, displayKey, valueKey, value, onSelect, plac
 }
 
 function App() {
-  const [currentMenu, setCurrentMenu] = useState('dienke');
+  const [currentMenu, setCurrentMenu] = useState('hoadon');
 
   const renderContent = () => {
     switch (currentMenu) {
@@ -139,7 +139,7 @@ function App() {
 }
 
 // ==========================================
-// SECTION 1: ĐIỆN KẾ (Form + Bảng danh sách)
+// SECTION 1: ĐIỆN KẾ
 // ==========================================
 function DienKeSection() {
   const [dienKe, setDienKe] = useState({
@@ -149,6 +149,13 @@ function DienKeSection() {
   const [dsDienKeList, setDsDienKeList] = useState([]); 
   const [message, setMessage] = useState('');
   const [isError, setIsError] = useState(false);
+
+  const getCurrentDateTime = () => {
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    return now.toISOString().slice(0, 16);
+  };
+  const maxDateTime = getCurrentDateTime();
 
   const loadDienKeList = () => {
     fetch(`${API_URL}/dienke`)
@@ -180,6 +187,7 @@ function DienKeSection() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
     if (!dienKe.makh) {
       setMessage("❌ Vui lòng chọn Khách Hàng từ danh sách!");
       setIsError(true);
@@ -188,6 +196,24 @@ function DienKeSection() {
 
     if (isCustomerLocked) {
       setMessage("❌ Khách hàng đang bị ngưng hoạt động, không thể thêm điện kế!");
+      setIsError(true);
+      return;
+    }
+
+    if (new Date(dienKe.ngaysx) >= new Date(dienKe.ngaylap)) {
+      setMessage("❌ Ngày sản xuất phải BÉ HƠN ngày lắp đặt!");
+      setIsError(true);
+      return;
+    }
+
+    if (new Date(dienKe.ngaysx) > new Date() || new Date(dienKe.ngaylap) > new Date()) {
+      setMessage("❌ Ngày sản xuất và Ngày lắp đặt KHÔNG ĐƯỢC lớn hơn ngày hiện tại!");
+      setIsError(true);
+      return;
+    }
+
+    if (!dienKe.mota || dienKe.mota.trim() === '') {
+      setMessage("❌ Mô tả không được để trống!");
       setIsError(true);
       return;
     }
@@ -284,11 +310,27 @@ function DienKeSection() {
 
             <div className="form-group">
               <label>Ngày sản xuất</label>
-              <input className="input-field" type="datetime-local" name="ngaysx" value={dienKe.ngaysx} onChange={handleChange} required />
+              <input 
+                className="input-field" 
+                type="datetime-local" 
+                name="ngaysx" 
+                max={maxDateTime} 
+                value={dienKe.ngaysx} 
+                onChange={handleChange} 
+                required 
+              />
             </div>
             <div className="form-group">
               <label>Ngày lắp đặt</label>
-              <input className="input-field" type="datetime-local" name="ngaylap" value={dienKe.ngaylap} onChange={handleChange} required />
+              <input 
+                className="input-field" 
+                type="datetime-local" 
+                name="ngaylap" 
+                max={maxDateTime} 
+                value={dienKe.ngaylap} 
+                onChange={handleChange} 
+                required 
+              />
             </div>
             <div className="form-group" style={{ gridColumn: '1 / -1' }}>
               <label>Mô tả thêm</label>
@@ -374,13 +416,16 @@ function DienKeSection() {
 }
 
 // ==========================================
-// SECTION 2: HÓA ĐƠN
+// SECTION 2: HÓA ĐƠN CHỐT SỐ
 // ==========================================
 function HoaDonSection() {
   const [reqData, setReqData] = useState({ madk: '', chisocuoi: '', denngay: '' });
   const [dsDienKe, setDsDienKe] = useState([]);
   const [dsKhachHang, setDsKhachHang] = useState([]);
+  
   const [chiSoDau, setChiSoDau] = useState(0);
+  const [ngayChotCuoi, setNgayChotCuoi] = useState(''); // MỐC THỜI GIAN KỲ TRƯỚC ĐỂ LÀM MIN DATE
+
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
 
@@ -407,20 +452,26 @@ function HoaDonSection() {
     setReqData({ ...reqData, [e.target.name]: e.target.value });
   };
 
+  // KHI CHỌN ĐIỆN KẾ -> LẤY CẢ CHỈ SỐ ĐẦU VÀ NGÀY CHỐT KỲ TRƯỚC
   const handleSelectDienKe = async (madk) => {
-    setReqData({ ...reqData, madk: madk });
+    setReqData({ ...reqData, madk: madk, denngay: '' }); // Xóa trắng ngày mỗi lần chọn lại mã
     if (!madk) {
       setChiSoDau(0);
+      setNgayChotCuoi('');
       return;
     }
     try {
-      const res = await fetch(`${API_URL}/hoadon/chisodau/${madk}`);
+      const res = await fetch(`${API_URL}/hoadon/thongtin-ky-truoc/${madk}`);
       if (res.ok) {
-        const csd = await res.json();
-        setChiSoDau(csd);
+        const data = await res.json();
+        setChiSoDau(data.chisodau || 0);
+        if (data.ngaychotcuoi) {
+          // Lấy đúng format yyyy-MM-ddTHH:mm để nhét vào thuộc tính min=""
+          setNgayChotCuoi(data.ngaychotcuoi.slice(0, 16));
+        }
       }
     } catch (error) {
-      console.log("Lỗi lấy chỉ số đầu:", error);
+      console.log("Lỗi lấy thông tin kỳ trước:", error);
     }
   };
 
@@ -445,6 +496,12 @@ function HoaDonSection() {
       return;
     }
 
+    // BLOCK Ở MẶT FRONTEND: Không cho submit nếu cố tình lách lỗi UI
+    if (ngayChotCuoi && new Date(reqData.denngay) <= new Date(ngayChotCuoi)) {
+      setError(`❌ Lỗi: Ngày chốt số mới phải LỚN HƠN mốc cũ (${formatDateTime(ngayChotCuoi)})!`);
+      return;
+    }
+
     try {
       const payload = {
         madk: reqData.madk,
@@ -459,6 +516,11 @@ function HoaDonSection() {
       if (response.ok) {
         const data = await response.json();
         setResult(data);
+        
+        // Chốt xong, reset lại ngày min thành ngày vừa chốt
+        setChiSoDau(data.chisocuoi);
+        setNgayChotCuoi(data.denngay.slice(0, 16));
+        setReqData({ ...reqData, chisocuoi: '', denngay: '' });
       } else {
         const errorText = await response.text();
         setError(`❌ Lỗi: ${errorText}`);
@@ -500,7 +562,7 @@ function HoaDonSection() {
           )}
 
           <div className="form-group">
-            <label>Chỉ số đầu (Tự động)</label>
+            <label>Chỉ số đầu kỳ (Tự động)</label>
             <input
               className="input-field input-readonly"
               type="text"
@@ -508,11 +570,16 @@ function HoaDonSection() {
               readOnly
               disabled
             />
+            {ngayChotCuoi && (
+              <small style={{ color: '#059669', marginTop: '5px', fontWeight: 600 }}>
+                Mốc trước: {formatDateTime(ngayChotCuoi)}
+              </small>
+            )}
           </div>
 
           <div className="form-group">
-            <label>Chỉ số cuối (Chốt số)</label>
-            <input className="input-field" type="number" name="chisocuoi" placeholder={`Phải lớn hơn ${chiSoDau}...`} onChange={handleChange} required />
+            <label>Chỉ số cuối (Chốt số mới)</label>
+            <input className="input-field" type="number" name="chisocuoi" value={reqData.chisocuoi} placeholder={`Phải lớn hơn ${chiSoDau}...`} onChange={handleChange} required />
           </div>
 
           <div className="form-group" style={{ gridColumn: '1 / -1' }}>
@@ -521,7 +588,9 @@ function HoaDonSection() {
               className="input-field"
               type="datetime-local"
               name="denngay"
-              max={maxDateTime}
+              value={reqData.denngay}
+              min={ngayChotCuoi} /* CHẶN NGÀY QUÁ KHỨ */
+              max={maxDateTime}  /* CHẶN NGÀY TƯƠNG LAI */
               onChange={handleChange}
               required
             />

@@ -17,6 +17,8 @@ public class HoaDonController {
     private final HoaDonService hoaDonService;
     @Autowired
     private backend.elecmanagement.reponsitory.HoaDonReponsitory hoaDonReponsitory;
+    @Autowired
+    private backend.elecmanagement.reponsitory.DienKeReponsitory dienKeReponsitory;
 
     public HoaDonController(HoaDonService hoaDonService) {
         this.hoaDonService = hoaDonService;
@@ -59,5 +61,26 @@ public class HoaDonController {
             return ResponseEntity.ok(dto);
         }
         return ResponseEntity.notFound().build();
+    }
+
+    @GetMapping("thongtin-ky-truoc/{madk}")
+    public ResponseEntity<java.util.Map<String, Object>> getThongTinKyTruoc(@PathVariable String madk) {
+        java.util.Map<String, Object> result = new java.util.HashMap<>();
+        try {
+            java.util.List<backend.elecmanagement.entity.HoaDon> previousBills = hoaDonReponsitory.findHistoryByMadk(madk);
+            if (previousBills.isEmpty()) {
+                // Nếu chưa có hóa đơn nào -> Lấy Ngày lắp đặt điện kế làm mốc
+                backend.elecmanagement.entity.DienKe dk = dienKeReponsitory.findById(madk).orElseThrow();
+                result.put("chisodau", 0);
+                result.put("ngaychotcuoi", dk.getNgaylap()); 
+            } else {
+                // Nếu đã có hóa đơn -> Lấy Chỉ số cuối & Ngày chốt của kỳ trước làm mốc
+                result.put("chisodau", previousBills.get(0).getChisocuoi());
+                result.put("ngaychotcuoi", previousBills.get(0).getDenngay());
+            }
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
     }
 }

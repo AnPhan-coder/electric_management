@@ -1,6 +1,5 @@
 package backend.elecmanagement.service.impl;
 
-
 import backend.elecmanagement.entity.DienKe;
 import backend.elecmanagement.reponsitory.DienKeReponsitory;
 import backend.elecmanagement.reponsitory.KhachHangReponsitory;
@@ -30,15 +29,24 @@ public class DienKeServiceimpl implements DienKeService {
     }
 
     public DienKe save(DienKe dienKe) {
-        if (dienKe.getNgaysx().isAfter(dienKe.getNgaylap())) {
-            throw new RuntimeException("Ngày sản xuất phải trước hoặc bằng ngày lắp đặt");
+        // Check ngày sản xuất phải bé hơn ngày lắp đặt
+        if (!dienKe.getNgaysx().isBefore(dienKe.getNgaylap())) {
+            throw new RuntimeException("Ngày sản xuất phải bé hơn ngày lắp đặt!");
         }
 
-        // Lấy thông tin khách hàng ra thay vì chỉ check existsById
+        // Check không được vượt quá ngày hiện tại
+        if (dienKe.getNgaysx().isAfter(LocalDateTime.now()) || dienKe.getNgaylap().isAfter(LocalDateTime.now())) {
+            throw new RuntimeException("Ngày sản xuất và ngày lắp đặt không được lớn hơn ngày hiện tại!");
+        }
+
+        // Check mô tả không được rỗng
+        if (dienKe.getMota() == null || dienKe.getMota().trim().isEmpty()) {
+            throw new RuntimeException("Mô tả không được để trống!");
+        }
+
         backend.elecmanagement.entity.KhachHang khachHang = khachHangReponsitory.findById(dienKe.getMakh())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy khách hàng trong hệ thống"));
 
-        // RÀNG BUỘC MỚI: Nếu khách hàng ngưng hoạt động -> Chặn!
         if (khachHang.getTrangthai() != null && !khachHang.getTrangthai()) {
             throw new RuntimeException("Khách hàng này đang bị ngưng hoạt động, không được phép thêm điện kế mới!");
         }
