@@ -138,7 +138,7 @@ function App() {
 }
 
 // ==========================================
-// SECTION 1: ĐIỆN KẾ (Đã thêm Tìm kiếm)
+// SECTION 1: ĐIỆN KẾ (Bảng Danh Sách Mới)
 // ==========================================
 function DienKeSection() {
   const [dienKe, setDienKe] = useState({
@@ -147,8 +147,9 @@ function DienKeSection() {
   const [dsKhachHang, setDsKhachHang] = useState([]);
   const [dsDienKeList, setDsDienKeList] = useState([]);
 
-  // STATE MỚI CHO TÍNH NĂNG TÌM KIẾM
   const [searchListTerm, setSearchListTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const [message, setMessage] = useState('');
   const [isError, setIsError] = useState(false);
@@ -176,6 +177,10 @@ function DienKeSection() {
 
     loadDienKeList();
   }, []);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchListTerm]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -270,18 +275,26 @@ function DienKeSection() {
     }
   };
 
-  // LOGIC LỌC TÌM KIẾM ĐIỆN KẾ
   const filteredDienKeList = dsDienKeList.filter(dk => {
     const searchLower = searchListTerm.toLowerCase();
     const tenKH = getKhachHangInfo(dk.makh).toLowerCase();
-    const diaChi = (dk.diachi || dk.mota || '').toLowerCase();
+    const diaChi = (dk.diachi || '').toLowerCase();
+    const moTa = (dk.mota || '').toLowerCase();
 
     return (
       dk.madk.toLowerCase().includes(searchLower) ||
       tenKH.includes(searchLower) ||
-      diaChi.includes(searchLower)
+      diaChi.includes(searchLower) ||
+      moTa.includes(searchLower)
     );
   });
+
+  const totalPages = Math.ceil(filteredDienKeList.length / itemsPerPage);
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = filteredDienKeList.slice(indexOfFirstItem, indexOfLastItem);
+
+  const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
@@ -385,7 +398,6 @@ function DienKeSection() {
             📋 Danh Sách Điện Kế Trạm
           </h3>
 
-          {/* Ô TÌM KIẾM MỚI */}
           <div style={{ width: '320px' }}>
             <input
               type="text"
@@ -401,46 +413,48 @@ function DienKeSection() {
         <div className="table-wrapper">
           <table className="price-table">
             <thead>
+              {/* Set cứng width để bảng không bị nhảy múa */}
               <tr>
-                <th>Mã ĐK</th>
-                <th>Khách hàng sở hữu</th>
-                <th>Địa chỉ lắp đặt</th>
-                <th>Trạng thái</th>
-                <th>Thao tác</th>
+                <th style={{ width: '12%' }}>Mã ĐK</th>
+                <th style={{ width: '22%' }}>Khách hàng</th>
+                <th style={{ width: '25%' }}>Địa chỉ & Mô tả</th>
+                <th style={{ width: '15%' }}>Ngày lắp</th>
+                <th style={{ width: '13%', textAlign: 'center' }}>Trạng thái</th>
+                <th style={{ width: '13%', textAlign: 'center' }}>Thao tác</th>
               </tr>
             </thead>
             <tbody>
-              {filteredDienKeList.length > 0 ? filteredDienKeList.map(dk => (
+              {currentItems.length > 0 ? currentItems.map(dk => (
                 <tr key={dk.madk}>
                   <td style={{ fontWeight: 'bold', color: '#2563eb' }}>{dk.madk}</td>
                   <td>
                     <div style={{ fontWeight: 600, color: '#1f2937' }}>{getKhachHangInfo(dk.makh)}</div>
-                    <div style={{ fontSize: '0.85rem', color: '#64748b' }}>Mã: {dk.makh}</div>
+                    <div style={{ fontSize: '0.85rem', color: '#64748b' }}>Mã KH: {dk.makh}</div>
                   </td>
-                  <td>{dk.diachi || dk.mota}</td>
                   <td>
+                    <div style={{ color: '#1f2937' }}>{dk.diachi}</div>
+                    <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '4px' }}>Mô tả: {dk.mota}</div>
+                  </td>
+                  <td>{formatDateTime(dk.ngaylap)}</td>
+                  <td style={{ textAlign: 'center' }}>
                     {dk.trangthai ? (
                       <span className="badge status-active">Hoạt động</span>
                     ) : (
                       <span className="badge status-locked">Tạm ngưng</span>
                     )}
                   </td>
-                  <td>
+                  <td style={{ textAlign: 'center' }}>
                     <button
-                      className={dk.trangthai ? "btn" : "btn-success"}
-                      style={{
-                        padding: '6px 12px', fontSize: '0.85rem',
-                        ...(dk.trangthai ? { backgroundColor: '#fee2e2', color: '#ef4444', border: '1px solid #fecaca' } : {})
-                      }}
+                      className={`btn-action ${dk.trangthai ? 'btn-lock' : 'btn-unlock'}`}
                       onClick={() => handleToggleStatus(dk)}
                     >
-                      {dk.trangthai ? '🔒 Khóa' : '🔓 Mở khóa'}
+                      {dk.trangthai ? '🔒 Khóa' : '🔓 Mở'}
                     </button>
                   </td>
                 </tr>
               )) : (
                 <tr>
-                  <td colSpan="5" className="state-empty">
+                  <td colSpan="6" className="state-empty">
                     {searchListTerm ? 'Không tìm thấy điện kế nào phù hợp với từ khóa.' : 'Chưa có dữ liệu điện kế trong hệ thống.'}
                   </td>
                 </tr>
@@ -448,6 +462,47 @@ function DienKeSection() {
             </tbody>
           </table>
         </div>
+
+        {totalPages > 1 && (
+          <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '8px', marginTop: '25px' }}>
+            <button
+              onClick={() => paginate(currentPage - 1)}
+              disabled={currentPage === 1}
+              style={{ padding: '8px 14px', border: '1px solid #cbd5e1', borderRadius: '6px', background: currentPage === 1 ? '#f8fafc' : '#fff', cursor: currentPage === 1 ? 'not-allowed' : 'pointer', color: '#64748b', fontWeight: 600 }}
+            >
+              Trước
+            </button>
+
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map(number => (
+              <button
+                key={number}
+                onClick={() => paginate(number)}
+                style={{
+                  padding: '8px 14px',
+                  border: '1px solid',
+                  borderColor: currentPage === number ? '#2563eb' : '#cbd5e1',
+                  borderRadius: '6px',
+                  background: currentPage === number ? '#2563eb' : '#fff',
+                  color: currentPage === number ? '#fff' : '#475569',
+                  fontWeight: currentPage === number ? 'bold' : '600',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+              >
+                {number}
+              </button>
+            ))}
+
+            <button
+              onClick={() => paginate(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              style={{ padding: '8px 14px', border: '1px solid #cbd5e1', borderRadius: '6px', background: currentPage === totalPages ? '#f8fafc' : '#fff', cursor: currentPage === totalPages ? 'not-allowed' : 'pointer', color: '#64748b', fontWeight: 600 }}
+            >
+              Sau
+            </button>
+          </div>
+        )}
+
       </div>
     </div>
   );
@@ -520,7 +575,7 @@ function HoaDonSection() {
         }
       }
     } catch (error) {
-      console.log("Lỗi lấy thông tin kỳ trước:", error);
+      console.log("Lỗi lấy thông kỳ trước:", error);
     }
   };
 

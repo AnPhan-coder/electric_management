@@ -350,7 +350,6 @@ body {
   margin-bottom: -2px;
 }
 
-
 /* =========================================
    CHI TIẾT HÓA ĐƠN XỊN SÒ (BILL RESULT V2)
    ========================================= */
@@ -359,7 +358,6 @@ body {
   background-color: #ffffff;
   border: 1px solid #e2e8f0;
   border-top: 4px solid #3b82f6;
-  /* Vạch trên cùng nổi bật */
   border-radius: 12px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
   overflow: hidden;
@@ -548,35 +546,46 @@ body {
   font-weight: 800;
   letter-spacing: 0.5px;
 }
-.state-empty{
+
+.state-empty {
   text-align: center;
   padding: 40px 20px;
   color: #94a3b8;
   font-size: 1.1rem;
   font-style: italic;
 }
+
 /* Nhãn trạng thái */
 .badge {
   padding: 4px 10px;
   border-radius: 20px;
   font-size: 12px;
-  font-weight: 500;
-}
-.status-active {
-  background-color: #e6fcf5;
-  color: #0ca678;
-}
-.status-locked {
-  background-color: #fff5f5;
-  color: #fa5252;
+  font-weight: 600;
 }
 
-/* Nút thành công (để mở lại dịch vụ) */
+.status-active {
+  background-color: #dcfce7;
+  color: #059669;
+}
+
+.status-locked {
+  background-color: #fee2e2;
+  color: #dc2626;
+}
+
+/* Nút thao tác trên bảng */
 .btn-success {
-  background-color: #40c057;
+  background-color: #10b981;
   color: white;
   border: none;
-  padding: 4px 8px;
-  border-radius: 4px;
+  padding: 6px 12px;
+  border-radius: 8px;
   cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.btn-success:hover {
+  background-color: #059669;
 }
