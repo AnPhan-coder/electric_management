@@ -30,25 +30,21 @@ public class DienKeServiceimpl implements DienKeService {
     }
 
     public DienKe save(DienKe dienKe) {
-        // Kiểm tra mã điện kế đủ 8 số (Theo tài liệu word)
-        if (dienKe.getMadk() == null || !dienKe.getMadk().matches("^[0-9]{8}$")) {
-            throw new RuntimeException("Mã điện kế phải là 8 chữ số");
+        if (dienKe.getNgaysx().isAfter(dienKe.getNgaylap())) {
+            throw new RuntimeException("Ngày sản xuất phải trước hoặc bằng ngày lắp đặt");
         }
 
-        // Kiểm tra logic ngày
-        LocalDateTime now = LocalDateTime.now();
-        if (dienKe.getNgaysx().isAfter(now) || dienKe.getNgaylap().isAfter(now) || dienKe.getNgaysx().isAfter(dienKe.getNgaylap())) {
-            throw new RuntimeException("Logic ngày không hợp lệ");
+        // Lấy thông tin khách hàng ra thay vì chỉ check existsById
+        backend.elecmanagement.entity.KhachHang khachHang = khachHangReponsitory.findById(dienKe.getMakh())
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy khách hàng trong hệ thống"));
+
+        // RÀNG BUỘC MỚI: Nếu khách hàng ngưng hoạt động -> Chặn!
+        if (khachHang.getTrangthai() != null && !khachHang.getTrangthai()) {
+            throw new RuntimeException("Khách hàng này đang bị ngưng hoạt động, không được phép thêm điện kế mới!");
         }
 
-        // Kiểm tra khách hàng tồn tại
-        if (!khachHangReponsitory.existsById(dienKe.getMakh())) {
-            throw new RuntimeException("Không tìm thấy khách hàng");
-        }
-
-        // Kiểm tra trùng mã ĐK (Nếu là thêm mới)
         if (dienKeReponsitory.existsById(dienKe.getMadk())) {
-            throw new RuntimeException("Trùng mã điện kế");
+            throw new RuntimeException("Mã điện kế này đã tồn tại");
         }
 
         return dienKeReponsitory.save(dienKe);

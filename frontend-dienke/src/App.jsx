@@ -42,11 +42,8 @@ function SearchableDropdown({ items, displayKey, valueKey, value, onSelect, plac
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Xóa trắng ô tìm kiếm nếu value truyền vào bị reset từ bên ngoài
   useEffect(() => {
-    if (!value) {
-      setSearchTerm('');
-    }
+    if (!value) setSearchTerm('');
   }, [value]);
 
   const filteredItems = items.filter(item =>
@@ -142,14 +139,14 @@ function App() {
 }
 
 // ==========================================
-// SECTION 1: ĐIỆN KẾ (Có Bảng Danh Sách & Khóa)
+// SECTION 1: ĐIỆN KẾ (Form + Bảng danh sách)
 // ==========================================
 function DienKeSection() {
   const [dienKe, setDienKe] = useState({
     madk: '', makh: '', diachi: '', ngaysx: '', ngaylap: '', mota: '', trangthai: true
   });
   const [dsKhachHang, setDsKhachHang] = useState([]);
-  const [dsDienKeList, setDsDienKeList] = useState([]);
+  const [dsDienKeList, setDsDienKeList] = useState([]); 
   const [message, setMessage] = useState('');
   const [isError, setIsError] = useState(false);
 
@@ -179,11 +176,18 @@ function DienKeSection() {
   };
 
   const selectedCustomer = dsKhachHang.find(kh => kh.makh === dienKe.makh);
+  const isCustomerLocked = selectedCustomer && selectedCustomer.trangthai === false;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!dienKe.makh) {
       setMessage("❌ Vui lòng chọn Khách Hàng từ danh sách!");
+      setIsError(true);
+      return;
+    }
+
+    if (isCustomerLocked) {
+      setMessage("❌ Khách hàng đang bị ngưng hoạt động, không thể thêm điện kế!");
       setIsError(true);
       return;
     }
@@ -263,7 +267,13 @@ function DienKeSection() {
                 <p><strong>Họ tên:</strong> {selectedCustomer.tenkh}</p>
                 <p><strong>Điện thoại:</strong> {selectedCustomer.dt}</p>
                 <p><strong>CMND/CCCD:</strong> {selectedCustomer.cmnd}</p>
-                <p><strong>Thường trú:</strong> {selectedCustomer.diachi}</p>
+                <p>
+                  <strong>Trạng thái: </strong> 
+                  {selectedCustomer.trangthai === false 
+                    ? <span style={{ color: '#ef4444', fontWeight: 'bold' }}>🔴 Ngưng hoạt động</span> 
+                    : <span style={{ color: '#059669', fontWeight: 'bold' }}>🟢 Đang hoạt động</span>}
+                </p>
+                <p style={{ gridColumn: '1 / -1' }}><strong>Thường trú:</strong> {selectedCustomer.diachi}</p>
               </div>
             )}
 
@@ -290,7 +300,15 @@ function DienKeSection() {
               <input type="checkbox" name="trangthai" checked={dienKe.trangthai} onChange={handleChange} />
               Hoạt động bình thường
             </label>
-            <button type="submit" className="btn btn-primary">Lưu Điện Kế</button>
+            
+            <button 
+              type="submit" 
+              className="btn btn-primary"
+              disabled={isCustomerLocked}
+              style={isCustomerLocked ? { background: '#cbd5e1', color: '#64748b', cursor: 'not-allowed', boxShadow: 'none' } : {}}
+            >
+              {isCustomerLocked ? '🚫 Khách hàng bị khóa' : 'Lưu Điện Kế'}
+            </button>
           </div>
         </form>
         {message && (
@@ -591,7 +609,7 @@ function HoaDonSection() {
 }
 
 // ==========================================
-// SECTION 3: BẢNG GIÁ ĐIỆN (ĐÃ KHÔI PHỤC FULL CHỨC NĂNG)
+// SECTION 3: BẢNG GIÁ ĐIỆN
 // ==========================================
 function BangGiaDienSection() {
   const [activeTab, setActiveTab] = useState(TABS.HIEN_TAI);
