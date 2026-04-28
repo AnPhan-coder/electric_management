@@ -23,7 +23,6 @@ function formatDateTime(isoString) {
   const d = new Date(isoString);
   return d.toLocaleString('vi-VN', {
     day: '2-digit', month: '2-digit', year: 'numeric',
-    hour: '2-digit', minute: '2-digit',
   });
 }
 
@@ -64,10 +63,10 @@ function SearchableDropdown({ items, displayKey, valueKey, value, onSelect, plac
         onChange={(e) => {
           setSearchTerm(e.target.value);
           setIsOpen(true);
-          if (!e.target.value) onSelect(''); 
+          if (!e.target.value) onSelect('');
         }}
         onClick={() => {
-          setSearchTerm(''); 
+          setSearchTerm('');
           setIsOpen(true);
         }}
       />
@@ -89,7 +88,7 @@ function SearchableDropdown({ items, displayKey, valueKey, value, onSelect, plac
 }
 
 function App() {
-  const [currentMenu, setCurrentMenu] = useState('hoadon');
+  const [currentMenu, setCurrentMenu] = useState('dienke');
 
   const renderContent = () => {
     switch (currentMenu) {
@@ -139,23 +138,28 @@ function App() {
 }
 
 // ==========================================
-// SECTION 1: ĐIỆN KẾ
+// SECTION 1: ĐIỆN KẾ (Đã thêm Tìm kiếm)
 // ==========================================
 function DienKeSection() {
   const [dienKe, setDienKe] = useState({
     madk: '', makh: '', diachi: '', ngaysx: '', ngaylap: '', mota: '', trangthai: true
   });
   const [dsKhachHang, setDsKhachHang] = useState([]);
-  const [dsDienKeList, setDsDienKeList] = useState([]); 
+  const [dsDienKeList, setDsDienKeList] = useState([]);
+
+  // STATE MỚI CHO TÍNH NĂNG TÌM KIẾM
+  const [searchListTerm, setSearchListTerm] = useState('');
+
   const [message, setMessage] = useState('');
   const [isError, setIsError] = useState(false);
 
-  const getCurrentDateTime = () => {
+  const getEndOfTodayDateTime = () => {
     const now = new Date();
+    now.setHours(23, 59, 59, 999);
     now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
     return now.toISOString().slice(0, 16);
   };
-  const maxDateTime = getCurrentDateTime();
+  const maxDateTime = getEndOfTodayDateTime();
 
   const loadDienKeList = () => {
     fetch(`${API_URL}/dienke`)
@@ -169,7 +173,7 @@ function DienKeSection() {
       .then(res => res.json())
       .then(data => setDsKhachHang(data))
       .catch(err => console.log("Lỗi tải DS Khách hàng:", err));
-    
+
     loadDienKeList();
   }, []);
 
@@ -182,12 +186,17 @@ function DienKeSection() {
     setDienKe({ ...dienKe, makh: makh });
   };
 
+  const getKhachHangInfo = (makh) => {
+    const kh = dsKhachHang.find(k => k.makh === makh);
+    return kh ? kh.tenkh : makh;
+  };
+
   const selectedCustomer = dsKhachHang.find(kh => kh.makh === dienKe.makh);
   const isCustomerLocked = selectedCustomer && selectedCustomer.trangthai === false;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!dienKe.makh) {
       setMessage("❌ Vui lòng chọn Khách Hàng từ danh sách!");
       setIsError(true);
@@ -200,20 +209,24 @@ function DienKeSection() {
       return;
     }
 
-    if (new Date(dienKe.ngaysx) >= new Date(dienKe.ngaylap)) {
+    if (!dienKe.mota || dienKe.mota.trim() === '') {
+      setMessage("❌ Mô tả không được để trống!");
+      setIsError(true);
+      return;
+    }
+
+    const sxDate = new Date(dienKe.ngaysx).setHours(0, 0, 0, 0);
+    const lapDate = new Date(dienKe.ngaylap).setHours(0, 0, 0, 0);
+    const today = new Date().setHours(0, 0, 0, 0);
+
+    if (sxDate >= lapDate) {
       setMessage("❌ Ngày sản xuất phải BÉ HƠN ngày lắp đặt!");
       setIsError(true);
       return;
     }
 
-    if (new Date(dienKe.ngaysx) > new Date() || new Date(dienKe.ngaylap) > new Date()) {
-      setMessage("❌ Ngày sản xuất và Ngày lắp đặt KHÔNG ĐƯỢC lớn hơn ngày hiện tại!");
-      setIsError(true);
-      return;
-    }
-
-    if (!dienKe.mota || dienKe.mota.trim() === '') {
-      setMessage("❌ Mô tả không được để trống!");
+    if (sxDate > today || lapDate > today) {
+      setMessage("❌ Ngày sản xuất và Ngày lắp đặt KHÔNG ĐƯỢC LỚN HƠN ngày hiện tại!");
       setIsError(true);
       return;
     }
@@ -248,7 +261,7 @@ function DienKeSection() {
         method: 'PUT'
       });
       if (response.ok) {
-        loadDienKeList(); 
+        loadDienKeList();
       } else {
         alert("❌ Lỗi khi cập nhật trạng thái điện kế!");
       }
@@ -257,10 +270,18 @@ function DienKeSection() {
     }
   };
 
-  const getKhachHangInfo = (makh) => {
-    const kh = dsKhachHang.find(k => k.makh === makh);
-    return kh ? kh.tenkh : makh;
-  };
+  // LOGIC LỌC TÌM KIẾM ĐIỆN KẾ
+  const filteredDienKeList = dsDienKeList.filter(dk => {
+    const searchLower = searchListTerm.toLowerCase();
+    const tenKH = getKhachHangInfo(dk.makh).toLowerCase();
+    const diaChi = (dk.diachi || dk.mota || '').toLowerCase();
+
+    return (
+      dk.madk.toLowerCase().includes(searchLower) ||
+      tenKH.includes(searchLower) ||
+      diaChi.includes(searchLower)
+    );
+  });
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
@@ -294,9 +315,9 @@ function DienKeSection() {
                 <p><strong>Điện thoại:</strong> {selectedCustomer.dt}</p>
                 <p><strong>CMND/CCCD:</strong> {selectedCustomer.cmnd}</p>
                 <p>
-                  <strong>Trạng thái: </strong> 
-                  {selectedCustomer.trangthai === false 
-                    ? <span style={{ color: '#ef4444', fontWeight: 'bold' }}>🔴 Ngưng hoạt động</span> 
+                  <strong>Trạng thái: </strong>
+                  {selectedCustomer.trangthai === false
+                    ? <span style={{ color: '#ef4444', fontWeight: 'bold' }}>🔴 Ngưng hoạt động</span>
                     : <span style={{ color: '#059669', fontWeight: 'bold' }}>🟢 Đang hoạt động</span>}
                 </p>
                 <p style={{ gridColumn: '1 / -1' }}><strong>Thường trú:</strong> {selectedCustomer.diachi}</p>
@@ -310,26 +331,26 @@ function DienKeSection() {
 
             <div className="form-group">
               <label>Ngày sản xuất</label>
-              <input 
-                className="input-field" 
-                type="datetime-local" 
-                name="ngaysx" 
-                max={maxDateTime} 
-                value={dienKe.ngaysx} 
-                onChange={handleChange} 
-                required 
+              <input
+                className="input-field"
+                type="datetime-local"
+                name="ngaysx"
+                max={maxDateTime}
+                value={dienKe.ngaysx}
+                onChange={handleChange}
+                required
               />
             </div>
             <div className="form-group">
               <label>Ngày lắp đặt</label>
-              <input 
-                className="input-field" 
-                type="datetime-local" 
-                name="ngaylap" 
-                max={maxDateTime} 
-                value={dienKe.ngaylap} 
-                onChange={handleChange} 
-                required 
+              <input
+                className="input-field"
+                type="datetime-local"
+                name="ngaylap"
+                max={maxDateTime}
+                value={dienKe.ngaylap}
+                onChange={handleChange}
+                required
               />
             </div>
             <div className="form-group" style={{ gridColumn: '1 / -1' }}>
@@ -342,9 +363,9 @@ function DienKeSection() {
               <input type="checkbox" name="trangthai" checked={dienKe.trangthai} onChange={handleChange} />
               Hoạt động bình thường
             </label>
-            
-            <button 
-              type="submit" 
+
+            <button
+              type="submit"
               className="btn btn-primary"
               disabled={isCustomerLocked}
               style={isCustomerLocked ? { background: '#cbd5e1', color: '#64748b', cursor: 'not-allowed', boxShadow: 'none' } : {}}
@@ -359,9 +380,24 @@ function DienKeSection() {
       </div>
 
       <div className="card">
-        <h3 style={{ marginBottom: '20px', color: '#1e293b', fontSize: '1.25rem' }}>
-          📋 Danh Sách Điện Kế Trạm
-        </h3>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+          <h3 style={{ color: '#1e293b', fontSize: '1.25rem', margin: 0 }}>
+            📋 Danh Sách Điện Kế Trạm
+          </h3>
+
+          {/* Ô TÌM KIẾM MỚI */}
+          <div style={{ width: '320px' }}>
+            <input
+              type="text"
+              className="input-field"
+              placeholder="🔍 Tìm mã ĐK, tên KH, địa chỉ..."
+              value={searchListTerm}
+              onChange={(e) => setSearchListTerm(e.target.value)}
+              style={{ padding: '10px 16px', borderRadius: '30px', fontSize: '0.95rem' }}
+            />
+          </div>
+        </div>
+
         <div className="table-wrapper">
           <table className="price-table">
             <thead>
@@ -374,7 +410,7 @@ function DienKeSection() {
               </tr>
             </thead>
             <tbody>
-              {dsDienKeList.length > 0 ? dsDienKeList.map(dk => (
+              {filteredDienKeList.length > 0 ? filteredDienKeList.map(dk => (
                 <tr key={dk.madk}>
                   <td style={{ fontWeight: 'bold', color: '#2563eb' }}>{dk.madk}</td>
                   <td>
@@ -393,7 +429,7 @@ function DienKeSection() {
                     <button
                       className={dk.trangthai ? "btn" : "btn-success"}
                       style={{
-                        padding: '6px 12px', fontSize: '0.85rem', 
+                        padding: '6px 12px', fontSize: '0.85rem',
                         ...(dk.trangthai ? { backgroundColor: '#fee2e2', color: '#ef4444', border: '1px solid #fecaca' } : {})
                       }}
                       onClick={() => handleToggleStatus(dk)}
@@ -404,7 +440,9 @@ function DienKeSection() {
                 </tr>
               )) : (
                 <tr>
-                  <td colSpan="5" className="state-empty">Chưa có dữ liệu điện kế trong hệ thống.</td>
+                  <td colSpan="5" className="state-empty">
+                    {searchListTerm ? 'Không tìm thấy điện kế nào phù hợp với từ khóa.' : 'Chưa có dữ liệu điện kế trong hệ thống.'}
+                  </td>
                 </tr>
               )}
             </tbody>
@@ -422,19 +460,21 @@ function HoaDonSection() {
   const [reqData, setReqData] = useState({ madk: '', chisocuoi: '', denngay: '' });
   const [dsDienKe, setDsDienKe] = useState([]);
   const [dsKhachHang, setDsKhachHang] = useState([]);
-  
+
   const [chiSoDau, setChiSoDau] = useState(0);
-  const [ngayChotCuoi, setNgayChotCuoi] = useState(''); // MỐC THỜI GIAN KỲ TRƯỚC ĐỂ LÀM MIN DATE
+  const [ngayChotCuoi, setNgayChotCuoi] = useState('');
+  const [minDateTime, setMinDateTime] = useState('');
 
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
 
-  const getCurrentDateTime = () => {
+  const getEndOfTodayDateTime = () => {
     const now = new Date();
+    now.setHours(23, 59, 59, 999);
     now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
     return now.toISOString().slice(0, 16);
   };
-  const maxDateTime = getCurrentDateTime();
+  const maxDateTime = getEndOfTodayDateTime();
 
   useEffect(() => {
     fetch(`${API_URL}/dienke`)
@@ -452,12 +492,12 @@ function HoaDonSection() {
     setReqData({ ...reqData, [e.target.name]: e.target.value });
   };
 
-  // KHI CHỌN ĐIỆN KẾ -> LẤY CẢ CHỈ SỐ ĐẦU VÀ NGÀY CHỐT KỲ TRƯỚC
   const handleSelectDienKe = async (madk) => {
-    setReqData({ ...reqData, madk: madk, denngay: '' }); // Xóa trắng ngày mỗi lần chọn lại mã
+    setReqData({ ...reqData, madk: madk, denngay: '' });
     if (!madk) {
       setChiSoDau(0);
       setNgayChotCuoi('');
+      setMinDateTime('');
       return;
     }
     try {
@@ -465,9 +505,18 @@ function HoaDonSection() {
       if (res.ok) {
         const data = await res.json();
         setChiSoDau(data.chisodau || 0);
+
         if (data.ngaychotcuoi) {
-          // Lấy đúng format yyyy-MM-ddTHH:mm để nhét vào thuộc tính min=""
-          setNgayChotCuoi(data.ngaychotcuoi.slice(0, 16));
+          setNgayChotCuoi(data.ngaychotcuoi);
+
+          const dateObj = new Date(data.ngaychotcuoi);
+          dateObj.setDate(dateObj.getDate() + 1);
+          dateObj.setHours(0, 0, 0, 0);
+          dateObj.setMinutes(dateObj.getMinutes() - dateObj.getTimezoneOffset());
+          setMinDateTime(dateObj.toISOString().slice(0, 16));
+        } else {
+          setNgayChotCuoi('');
+          setMinDateTime('');
         }
       }
     } catch (error) {
@@ -491,15 +540,21 @@ function HoaDonSection() {
       setError(`❌ Chỉ số cuối (${reqData.chisocuoi}) phải lớn hơn chỉ số đầu (${chiSoDau})!`);
       return;
     }
-    if (new Date(reqData.denngay) > new Date()) {
-      setError("❌ Lỗi: Ngày chốt số không được vượt quá ngày giờ hiện tại!");
+
+    const chotDate = new Date(reqData.denngay).setHours(0, 0, 0, 0);
+    const today = new Date().setHours(0, 0, 0, 0);
+
+    if (chotDate > today) {
+      setError("❌ Lỗi: Ngày chốt số không được vượt quá ngày hiện tại!");
       return;
     }
 
-    // BLOCK Ở MẶT FRONTEND: Không cho submit nếu cố tình lách lỗi UI
-    if (ngayChotCuoi && new Date(reqData.denngay) <= new Date(ngayChotCuoi)) {
-      setError(`❌ Lỗi: Ngày chốt số mới phải LỚN HƠN mốc cũ (${formatDateTime(ngayChotCuoi)})!`);
-      return;
+    if (ngayChotCuoi) {
+      const cuoiDate = new Date(ngayChotCuoi).setHours(0, 0, 0, 0);
+      if (chotDate <= cuoiDate) {
+        setError(`❌ Lỗi: Ngày chốt số mới phải LỚN HƠN ngày kỳ trước (${formatDateTime(ngayChotCuoi)})!`);
+        return;
+      }
     }
 
     try {
@@ -516,10 +571,16 @@ function HoaDonSection() {
       if (response.ok) {
         const data = await response.json();
         setResult(data);
-        
-        // Chốt xong, reset lại ngày min thành ngày vừa chốt
+
         setChiSoDau(data.chisocuoi);
-        setNgayChotCuoi(data.denngay.slice(0, 16));
+        setNgayChotCuoi(data.denngay);
+
+        const dateObj = new Date(data.denngay);
+        dateObj.setDate(dateObj.getDate() + 1);
+        dateObj.setHours(0, 0, 0, 0);
+        dateObj.setMinutes(dateObj.getMinutes() - dateObj.getTimezoneOffset());
+        setMinDateTime(dateObj.toISOString().slice(0, 16));
+
         setReqData({ ...reqData, chisocuoi: '', denngay: '' });
       } else {
         const errorText = await response.text();
@@ -572,7 +633,7 @@ function HoaDonSection() {
             />
             {ngayChotCuoi && (
               <small style={{ color: '#059669', marginTop: '5px', fontWeight: 600 }}>
-                Mốc trước: {formatDateTime(ngayChotCuoi)}
+                Kỳ trước: {formatDateTime(ngayChotCuoi)}
               </small>
             )}
           </div>
@@ -589,8 +650,8 @@ function HoaDonSection() {
               type="datetime-local"
               name="denngay"
               value={reqData.denngay}
-              min={ngayChotCuoi} /* CHẶN NGÀY QUÁ KHỨ */
-              max={maxDateTime}  /* CHẶN NGÀY TƯƠNG LAI */
+              min={minDateTime}
+              max={maxDateTime}
               onChange={handleChange}
               required
             />
