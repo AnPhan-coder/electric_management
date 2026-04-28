@@ -49,35 +49,52 @@ export default function KhachHangSection() {
   const handleChange = (e) => {
     const { name, value } = e.target;
     
-    if (name === 'dt') {
-      const onlyNums = value.replace(/\D/g, '').slice(0, 10);
-      setFormData({ ...formData, [name]: onlyNums });
-    } else if (name === 'cmnd') {
+    if (name === 'makh') {
+      setFormData({ ...formData, [name]: value.slice(0, 13) });
+    } 
+    else if (name === 'cmnd') {
       const onlyNums = value.replace(/\D/g, '').slice(0, 12);
       setFormData({ ...formData, [name]: onlyNums });
-    } else if (name === 'trangthai') {
-      // Chuyển giá trị từ string "true"/"false" sang boolean
-      setFormData({ ...formData, [name]: value === 'true' });
-    } else {
+    } 
+    else if (name === 'dt') {
+      const onlyNums = value.replace(/\D/g, '').slice(0, 10);
+      setFormData({ ...formData, [name]: onlyNums });
+    } 
+    else {
       setFormData({ ...formData, [name]: value });
     }
   };
 
   // 4. Thêm hoặc Cập nhật
-  const handleSubmit = async (e) => {
+const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage(null);
 
-    if (formData.dt.length !== 10) {
-      setMessage({ type: 'error', text: '⚠️ Số điện thoại phải nhập ĐÚNG 10 chữ số!' });
-      return;
-    }
-    if (!formData.dt.startsWith('0')) {
-      setMessage({ type: 'error', text: '⚠️ Số điện thoại phải bắt đầu bằng số 0!' });
+    // Ràng buộc Mã khách hàng: Phải ĐÚNG 13 ký tự
+    if (formData.makh.length !== 13) {
+      setMessage({ 
+        type: 'error', 
+        text: `⚠️ Mã khách hàng đang có ${formData.makh.length} ký tự. Phải nhập ĐÚNG 13 ký tự!` 
+      });
       return;
     }
 
-    try {
+    // Ràng buộc Số điện thoại: Phải ĐÚNG 10 số và bắt đầu bằng số 0
+    if (formData.dt.length !== 10 || !formData.dt.startsWith('0')) {
+      setMessage({ type: 'error', text: '⚠️ Số điện thoại phải ĐÚNG 10 số và bắt đầu bằng số 0!' });
+      return;
+    }
+
+    // Ràng buộc CCCD: Phải ĐÚNG 12 số
+    if (formData.cmnd.length !== 12) {
+      setMessage({ 
+        type: 'error', 
+        text: `⚠️ CCCD đang có ${formData.cmnd.length} số. Phải nhập ĐÚNG 12 chữ số!` 
+      });
+      return;
+    }
+
+try {
       const method = isEditing ? 'PUT' : 'POST';
       const url = isEditing ? `${API_URL}/khachhang/${formData.makh}` : `${API_URL}/khachhang`;
       const res = await fetch(url, {
