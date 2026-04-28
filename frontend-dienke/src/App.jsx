@@ -42,6 +42,13 @@ function SearchableDropdown({ items, displayKey, valueKey, value, onSelect, plac
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Xóa trắng ô tìm kiếm nếu value truyền vào bị reset từ bên ngoài
+  useEffect(() => {
+    if (!value) {
+      setSearchTerm('');
+    }
+  }, [value]);
+
   const filteredItems = items.filter(item =>
     String(item[displayKey] || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     String(item[valueKey] || '').toLowerCase().includes(searchTerm.toLowerCase())
@@ -60,10 +67,10 @@ function SearchableDropdown({ items, displayKey, valueKey, value, onSelect, plac
         onChange={(e) => {
           setSearchTerm(e.target.value);
           setIsOpen(true);
-          if (!e.target.value) onSelect('');
+          if (!e.target.value) onSelect(''); 
         }}
         onClick={() => {
-          setSearchTerm('');
+          setSearchTerm(''); 
           setIsOpen(true);
         }}
       />
@@ -85,7 +92,7 @@ function SearchableDropdown({ items, displayKey, valueKey, value, onSelect, plac
 }
 
 function App() {
-  const [currentMenu, setCurrentMenu] = useState('hoadon');
+  const [currentMenu, setCurrentMenu] = useState('dienke');
 
   const renderContent = () => {
     switch (currentMenu) {
@@ -134,19 +141,32 @@ function App() {
   );
 }
 
+// ==========================================
+// SECTION 1: ĐIỆN KẾ (Có Bảng Danh Sách & Khóa)
+// ==========================================
 function DienKeSection() {
   const [dienKe, setDienKe] = useState({
     madk: '', makh: '', diachi: '', ngaysx: '', ngaylap: '', mota: '', trangthai: true
   });
   const [dsKhachHang, setDsKhachHang] = useState([]);
+  const [dsDienKeList, setDsDienKeList] = useState([]);
   const [message, setMessage] = useState('');
   const [isError, setIsError] = useState(false);
+
+  const loadDienKeList = () => {
+    fetch(`${API_URL}/dienke`)
+      .then(res => res.json())
+      .then(data => setDsDienKeList(data))
+      .catch(err => console.log("Lỗi tải DS Điện kế:", err));
+  };
 
   useEffect(() => {
     fetch(`${API_URL}/khachhang`)
       .then(res => res.json())
       .then(data => setDsKhachHang(data))
       .catch(err => console.log("Lỗi tải DS Khách hàng:", err));
+    
+    loadDienKeList();
   }, []);
 
   const handleChange = (e) => {
@@ -178,6 +198,8 @@ function DienKeSection() {
         const data = await response.json();
         setMessage(`✅ Thêm thành công Điện kế: ${data.madk}`);
         setIsError(false);
+        setDienKe({ madk: '', makh: '', diachi: '', ngaysx: '', ngaylap: '', mota: '', trangthai: true });
+        loadDienKeList();
       } else {
         const errorText = await response.text();
         setMessage(`❌ Lỗi: ${errorText}`);
@@ -189,70 +211,153 @@ function DienKeSection() {
     }
   };
 
+  const handleToggleStatus = async (dk) => {
+    if (!window.confirm(`Bạn có chắc muốn thay đổi trạng thái của điện kế [${dk.madk}] không?`)) return;
+    try {
+      const response = await fetch(`${API_URL}/dienke/${dk.madk}/trangthai`, {
+        method: 'PUT'
+      });
+      if (response.ok) {
+        loadDienKeList(); 
+      } else {
+        alert("❌ Lỗi khi cập nhật trạng thái điện kế!");
+      }
+    } catch (error) {
+      alert("❌ Lỗi kết nối: " + error.message);
+    }
+  };
+
+  const getKhachHangInfo = (makh) => {
+    const kh = dsKhachHang.find(k => k.makh === makh);
+    return kh ? kh.tenkh : makh;
+  };
+
   return (
-    <div className="card">
-      <form onSubmit={handleSubmit}>
-        <div className="grid-form">
-          <div className="form-group">
-            <label>Mã điện kế (8 số)</label>
-            <input className="input-field" type="text" name="madk" placeholder="VD: 12345678" onChange={handleChange} required />
-          </div>
-
-          <div className="form-group">
-            <label>Chọn Khách Hàng</label>
-            <SearchableDropdown
-              items={dsKhachHang}
-              displayKey="tenkh"
-              valueKey="makh"
-              value={dienKe.makh}
-              onSelect={handleSelectKhachHang}
-              placeholder="Nhập mã hoặc tên KH để tìm..."
-            />
-          </div>
-
-          {selectedCustomer && (
-            <div className="customer-info-card">
-              <h4 style={{ gridColumn: '1 / -1' }}>👤 Thông tin khách hàng</h4>
-              <p><strong>Họ tên:</strong> {selectedCustomer.tenkh}</p>
-              <p><strong>Điện thoại:</strong> {selectedCustomer.dt}</p>
-              <p><strong>CMND/CCCD:</strong> {selectedCustomer.cmnd}</p>
-              <p><strong>Thường trú:</strong> {selectedCustomer.diachi}</p>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
+      <div className="card">
+        <h3 style={{ marginBottom: '25px', color: '#1e293b', fontSize: '1.25rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '15px' }}>
+          📝 Đăng ký Điện Kế mới
+        </h3>
+        <form onSubmit={handleSubmit}>
+          <div className="grid-form">
+            <div className="form-group">
+              <label>Mã điện kế (8 số)</label>
+              <input className="input-field" type="text" name="madk" placeholder="VD: 12345678" value={dienKe.madk} onChange={handleChange} required />
             </div>
-          )}
 
-          <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-            <label>📍 Địa chỉ lắp đặt Điện kế</label>
-            <input className="input-field" type="text" name="diachi" placeholder="Nhập địa chỉ nhà trọ, xưởng, công ty..." onChange={handleChange} required />
-          </div>
+            <div className="form-group">
+              <label>Chọn Khách Hàng</label>
+              <SearchableDropdown
+                items={dsKhachHang}
+                displayKey="tenkh"
+                valueKey="makh"
+                value={dienKe.makh}
+                onSelect={handleSelectKhachHang}
+                placeholder="Nhập mã hoặc tên KH để tìm..."
+              />
+            </div>
 
-          <div className="form-group">
-            <label>Ngày sản xuất</label>
-            <input className="input-field" type="datetime-local" name="ngaysx" onChange={handleChange} required />
+            {selectedCustomer && (
+              <div className="customer-info-card">
+                <h4 style={{ gridColumn: '1 / -1' }}>👤 Thông tin khách hàng</h4>
+                <p><strong>Họ tên:</strong> {selectedCustomer.tenkh}</p>
+                <p><strong>Điện thoại:</strong> {selectedCustomer.dt}</p>
+                <p><strong>CMND/CCCD:</strong> {selectedCustomer.cmnd}</p>
+                <p><strong>Thường trú:</strong> {selectedCustomer.diachi}</p>
+              </div>
+            )}
+
+            <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+              <label>📍 Địa chỉ lắp đặt Điện kế</label>
+              <input className="input-field" type="text" name="diachi" placeholder="Nhập địa chỉ nhà trọ, xưởng, công ty..." value={dienKe.diachi} onChange={handleChange} required />
+            </div>
+
+            <div className="form-group">
+              <label>Ngày sản xuất</label>
+              <input className="input-field" type="datetime-local" name="ngaysx" value={dienKe.ngaysx} onChange={handleChange} required />
+            </div>
+            <div className="form-group">
+              <label>Ngày lắp đặt</label>
+              <input className="input-field" type="datetime-local" name="ngaylap" value={dienKe.ngaylap} onChange={handleChange} required />
+            </div>
+            <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+              <label>Mô tả thêm</label>
+              <input className="input-field" type="text" name="mota" placeholder="Nhập mô tả..." value={dienKe.mota} onChange={handleChange} required />
+            </div>
           </div>
-          <div className="form-group">
-            <label>Ngày lắp đặt</label>
-            <input className="input-field" type="datetime-local" name="ngaylap" onChange={handleChange} required />
+          <div style={{ marginTop: '25px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <label className="checkbox-group">
+              <input type="checkbox" name="trangthai" checked={dienKe.trangthai} onChange={handleChange} />
+              Hoạt động bình thường
+            </label>
+            <button type="submit" className="btn btn-primary">Lưu Điện Kế</button>
           </div>
-          <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-            <label>Mô tả thêm</label>
-            <input className="input-field" type="text" name="mota" placeholder="Nhập mô tả..." onChange={handleChange} required />
-          </div>
+        </form>
+        {message && (
+          <div className={`alert ${isError ? 'alert-error' : 'alert-success'}`}>{message}</div>
+        )}
+      </div>
+
+      <div className="card">
+        <h3 style={{ marginBottom: '20px', color: '#1e293b', fontSize: '1.25rem' }}>
+          📋 Danh Sách Điện Kế Trạm
+        </h3>
+        <div className="table-wrapper">
+          <table className="price-table">
+            <thead>
+              <tr>
+                <th>Mã ĐK</th>
+                <th>Khách hàng sở hữu</th>
+                <th>Địa chỉ lắp đặt</th>
+                <th>Trạng thái</th>
+                <th>Thao tác</th>
+              </tr>
+            </thead>
+            <tbody>
+              {dsDienKeList.length > 0 ? dsDienKeList.map(dk => (
+                <tr key={dk.madk}>
+                  <td style={{ fontWeight: 'bold', color: '#2563eb' }}>{dk.madk}</td>
+                  <td>
+                    <div style={{ fontWeight: 600, color: '#1f2937' }}>{getKhachHangInfo(dk.makh)}</div>
+                    <div style={{ fontSize: '0.85rem', color: '#64748b' }}>Mã: {dk.makh}</div>
+                  </td>
+                  <td>{dk.diachi || dk.mota}</td>
+                  <td>
+                    {dk.trangthai ? (
+                      <span className="badge status-active">Hoạt động</span>
+                    ) : (
+                      <span className="badge status-locked">Tạm ngưng</span>
+                    )}
+                  </td>
+                  <td>
+                    <button
+                      className={dk.trangthai ? "btn" : "btn-success"}
+                      style={{
+                        padding: '6px 12px', fontSize: '0.85rem', 
+                        ...(dk.trangthai ? { backgroundColor: '#fee2e2', color: '#ef4444', border: '1px solid #fecaca' } : {})
+                      }}
+                      onClick={() => handleToggleStatus(dk)}
+                    >
+                      {dk.trangthai ? '🔒 Khóa' : '🔓 Mở khóa'}
+                    </button>
+                  </td>
+                </tr>
+              )) : (
+                <tr>
+                  <td colSpan="5" className="state-empty">Chưa có dữ liệu điện kế trong hệ thống.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
-        <div style={{ marginTop: '25px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <label className="checkbox-group">
-            <input type="checkbox" name="trangthai" checked={dienKe.trangthai} onChange={handleChange} />
-            Hoạt động bình thường
-          </label>
-          <button type="submit" className="btn btn-primary">Lưu Điện Kế</button>
-        </div>
-      </form>
-      {message && (
-        <div className={`alert ${isError ? 'alert-error' : 'alert-success'}`}>{message}</div>
-      )}
+      </div>
     </div>
   );
 }
 
+// ==========================================
+// SECTION 2: HÓA ĐƠN
+// ==========================================
 function HoaDonSection() {
   const [reqData, setReqData] = useState({ madk: '', chisocuoi: '', denngay: '' });
   const [dsDienKe, setDsDienKe] = useState([]);
@@ -411,7 +516,6 @@ function HoaDonSection() {
 
       {error && <div className="alert alert-error">{error}</div>}
 
-      {/* --- GIAO DIỆN HÓA ĐƠN V2 ĐÃ CẬP NHẬT --- */}
       {result && (
         <div className="bill-result">
           <div className="bill-header">
@@ -420,8 +524,6 @@ function HoaDonSection() {
           </div>
 
           <div className="bill-body">
-
-            {/* PANEL TRÁI: THÔNG TIN CHUNG */}
             <div className="bill-info-panel">
               <div className="bill-info-row">
                 <span className="bill-info-label">Mã Hóa Đơn:</span>
@@ -441,7 +543,6 @@ function HoaDonSection() {
               </div>
             </div>
 
-            {/* PANEL PHẢI: BẢNG CHI TIẾT BẬC THANG */}
             <div className="bill-table-panel">
               <div className="bill-table-header">
                 📊 Phân tích tiền điện theo bậc thang
@@ -475,10 +576,8 @@ function HoaDonSection() {
                 </tbody>
               </table>
             </div>
-
           </div>
 
-          {/* FOOTER: TỔNG TIỀN */}
           <div className="bill-footer">
             <div className="total-box">
               <span className="total-label">Tổng thành tiền (Chưa VAT):</span>
@@ -491,6 +590,9 @@ function HoaDonSection() {
   );
 }
 
+// ==========================================
+// SECTION 3: BẢNG GIÁ ĐIỆN (ĐÃ KHÔI PHỤC FULL CHỨC NĂNG)
+// ==========================================
 function BangGiaDienSection() {
   const [activeTab, setActiveTab] = useState(TABS.HIEN_TAI);
 
@@ -612,7 +714,7 @@ function TabGiaHienTai() {
         densokwBacHienTai: parseInt(newTier.densokwBacHienTai),
         dongiaBacMoi: parseFloat(newTier.dongiaBacMoi)
       };
-      
+
       const response = await fetch(`${API_URL}/giadien/them-bac`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -676,11 +778,11 @@ function TabGiaHienTai() {
               <td>{bac.densokw ?? '∞'}</td>
               <td style={{ color: '#059669', fontWeight: 'bold' }}>
                 {isEditing ? (
-                  <input 
-                    type="number" 
-                    className="input-field" 
-                    value={editValues[bac.mabac] ?? ''} 
-                    onChange={e => setEditValues({...editValues, [bac.mabac]: e.target.value})}
+                  <input
+                    type="number"
+                    className="input-field"
+                    value={editValues[bac.mabac] ?? ''}
+                    onChange={e => setEditValues({ ...editValues, [bac.mabac]: e.target.value })}
                     style={{ width: '120px', padding: '4px 8px', margin: 0 }}
                   />
                 ) : formatCurrency(bac.dongia)}
@@ -706,10 +808,10 @@ function TabGiaHienTai() {
           <form onSubmit={handleAddSubmit} style={{ display: 'flex', gap: '15px', alignItems: 'flex-end' }}>
             <div className="form-group" style={{ marginBottom: 0, flex: 1 }}>
               <label>Khép cận trên cho Bậc {highestTier.mabac} (kWh)</label>
-              <input 
-                className="input-field" 
-                type="number" 
-                required 
+              <input
+                className="input-field"
+                type="number"
+                required
                 placeholder={`Lớn hơn ${highestTier.tusokw}`}
                 value={newTier.densokwBacHienTai}
                 onChange={(e) => setNewTier({ ...newTier, densokwBacHienTai: e.target.value })}
@@ -717,10 +819,10 @@ function TabGiaHienTai() {
             </div>
             <div className="form-group" style={{ marginBottom: 0, flex: 1 }}>
               <label>Đơn giá cho Bậc {highestTier.mabac + 1} mới (đ/kWh)</label>
-              <input 
-                className="input-field" 
-                type="number" 
-                required 
+              <input
+                className="input-field"
+                type="number"
+                required
                 placeholder="VD: 3500"
                 value={newTier.dongiaBacMoi}
                 onChange={(e) => setNewTier({ ...newTier, dongiaBacMoi: e.target.value })}
@@ -769,11 +871,11 @@ function TabLichSuGia() {
         <h4 style={{ marginBottom: '15px' }}>⏱ Các lần thay đổi giá</h4>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           {phienList.map(phien => (
-            <div 
-              key={phien.malichsu} 
+            <div
+              key={phien.malichsu}
               onClick={() => handleSelectPhien(phien.malichsu)}
               style={{
-                padding: '12px', border: '1px solid #cbd5e1', borderRadius: '6px', 
+                padding: '12px', border: '1px solid #cbd5e1', borderRadius: '6px',
                 cursor: 'pointer', backgroundColor: selectedPhien === phien.malichsu ? '#eff6ff' : '#fff',
                 borderColor: selectedPhien === phien.malichsu ? '#3b82f6' : '#cbd5e1'
               }}
@@ -784,7 +886,7 @@ function TabLichSuGia() {
           ))}
         </div>
       </div>
-      
+
       <div style={{ flex: '2', paddingLeft: '5px' }}>
         {!selectedPhien ? (
           <div style={{ display: 'flex', height: '100%', alignItems: 'center', justifyContent: 'center', color: '#94a3b8' }}>

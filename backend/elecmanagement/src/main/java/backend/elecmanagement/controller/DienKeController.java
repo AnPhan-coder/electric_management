@@ -5,6 +5,7 @@ import backend.elecmanagement.entity.DienKe;
 import backend.elecmanagement.service.DienKeService;
 import jakarta.validation.Valid;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -16,6 +17,8 @@ import java.util.Optional;
 @CrossOrigin("*")
 public class DienKeController {
     private final DienKeService dienKeService;
+    @Autowired
+    private backend.elecmanagement.reponsitory.DienKeReponsitory dienKeReponsitory;
 
     public DienKeController(DienKeService dienKeService) {
         this.dienKeService = dienKeService;
@@ -44,5 +47,15 @@ public class DienKeController {
         item.setTrangthai(request.getTrangthai() != null ? request.getTrangthai() : true);
 
         return ResponseEntity.ok(dienKeService.save(item));
+    }
+    @PutMapping("/{id}/trangthai")
+    public ResponseEntity<?> updateTrangThai(@PathVariable String id) {
+        Optional<DienKe> opt = dienKeReponsitory.findById(id);
+        if (opt.isPresent()) {
+            DienKe dk = opt.get();
+            dk.setTrangthai(!dk.getTrangthai()); // Đảo ngược trạng thái
+            return ResponseEntity.ok(dienKeReponsitory.save(dk));
+        }
+        return ResponseEntity.notFound().build();
     }
 }
