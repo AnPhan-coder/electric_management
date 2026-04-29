@@ -4,6 +4,8 @@ import backend.elecmanagement.entity.CtHoaDon;
 import backend.elecmanagement.entity.CtHoaDonId;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface CtHoaDonReponsitory extends JpaRepository<CtHoaDon, CtHoaDonId> {
+import java.util.List;
 
+public interface CtHoaDonReponsitory extends JpaRepository<CtHoaDon, CtHoaDonId> {
+    List<CtHoaDon> findByIdMahd(String mahd);
 }

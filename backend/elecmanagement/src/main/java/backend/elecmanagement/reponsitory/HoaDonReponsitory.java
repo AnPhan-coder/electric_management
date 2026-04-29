@@ -28,6 +28,6 @@ public interface HoaDonReponsitory extends JpaRepository<HoaDon, String> {
             "JOIN CtHoaDon c ON h.mahd = c.id.mahd " +
             "JOIN DienKe d ON c.id.madk = d.madk " +
             "JOIN KhachHang k ON d.makh = k.makh " +
-            "WHERE h.tinhtrang = false")
+            "WHERE h.tinhtrang = false AND h.mahd = :mahd")
     CTHOADONNO getChiTietHoaDon(@Param("mahd") String mahd);
 }

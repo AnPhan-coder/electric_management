@@ -114,12 +114,18 @@ public class HoaDonServiceimpl implements HoaDonService {
 
     @Override
     public CTHOADONNO findChiTietByMaHD(String mahd) {
+        // 1. Lấy thông tin chung (tên, địa chỉ, tổng tiền...) từ Repository hiện tại của bạn
         CTHOADONNO dto = hoaDonReponsitory.getChiTietHoaDon(mahd);
 
-        if (dto == null) {
-            throw new RuntimeException("Không tìm thấy hóa đơn với mã: " + mahd);
+        if (dto != null) {
+            // 2. Lấy danh sách các bậc thang điện (ct_hoa_don) từ DB
+            List<CtHoaDon> danhSachBac = ctHoaDonReponsitory.findByIdMahd(mahd);
+
+            // 3. Đổ danh sách bậc vào DTO để gửi về Frontend
+            dto.setChiTiet(danhSachBac);
+            return dto;
         }
-        return dto;
+        return null;
     }
 
     @Override

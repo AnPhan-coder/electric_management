@@ -1,9 +1,11 @@
 package backend.elecmanagement.dto.request;
 
+import backend.elecmanagement.entity.CtHoaDon;
 import lombok.Data;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 public class CTHOADONNO {
@@ -17,6 +19,7 @@ public class CTHOADONNO {
     private String diachi;
     private String dt;
     private  String madk;
+    private List<CtHoaDon> chiTiet;
 
     public CTHOADONNO(String mahd, String ky, Integer chisodau, Integer chisocuoi, LocalDateTime ngaylaphd, BigDecimal tongthanhtien, String tenkh, String diachi, String dt , String madk){
         this.mahd=mahd;
